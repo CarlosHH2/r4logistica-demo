@@ -86,12 +86,30 @@ const CsvImport = () => {
         let errorCount = 0;
 
         for (const order of orders) {
+          // Fixed: Include all required fields for the orders table
+          const orderData = {
+            ...order,
+            user_id: userData.user.id,
+            // Ensure all required fields have at least empty values
+            street: order.street || '',
+            number: order.number || '',
+            neighborhood: order.neighborhood || '',
+            postal_code: order.postal_code || '',
+            administrative_area: order.administrative_area || '',
+            sub_administrative_area: order.sub_administrative_area || ''
+          };
+
+          // Validate required fields
+          if (!orderData.street || !orderData.number || !orderData.neighborhood || 
+              !orderData.postal_code || !orderData.administrative_area || !orderData.sub_administrative_area) {
+            console.error('Missing required fields for order:', orderData);
+            errorCount++;
+            continue;
+          }
+
           const { error } = await supabase
             .from('orders')
-            .insert({
-              ...order,
-              user_id: userData.user.id
-            });
+            .insert(orderData);
 
           if (error) {
             console.error('Error importing order:', error);
