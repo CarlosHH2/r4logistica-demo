@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AdminLayout from "./layouts/AdminLayout";
+import Login from "./pages/auth/Login";
+import CreateUser from "./pages/admin/CreateUser";
 import Dashboard from "./pages/dashboard/Dashboard";
 import OrderList from "./pages/orders/OrderList";
 import RouteList from "./pages/routes/RouteList";
@@ -26,12 +28,14 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Redirect root to admin dashboard */}
-          <Route path="/" element={<Navigate to="/admin" replace />} />
+          {/* Auth routes */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
           
           {/* Admin routes */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
+            <Route path="create-user" element={<CreateUser />} />
             <Route path="orders" element={<OrderList />} />
             <Route path="routes" element={<RouteList />} />
             <Route path="packages" element={<PackageList />} />
