@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import type { Order } from '@/types/order';
 
-type ManualOrderForm = Omit<Order, 'id' | 'created_at' | 'updated_at' | 'is_manual'>;
+type ManualOrderForm = Omit<Order, 'id' | 'created_at' | 'updated_at' | 'is_manual' | 'user_id'>;
 
 const CreateManualOrder = () => {
   const navigate = useNavigate();
@@ -17,9 +17,25 @@ const CreateManualOrder = () => {
 
   const onSubmit = async (data: ManualOrderForm) => {
     try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        throw userError;
+      }
+      
+      if (!userData.user) {
+        toast.error('Usuario no autenticado');
+        return;
+      }
+      
       const { error } = await supabase
         .from('orders')
-        .insert([{ ...data, is_manual: true }]);
+        .insert({
+          ...data,
+          is_manual: true,
+          user_id: userData.user.id,
+          country: 'MX'
+        });
 
       if (error) throw error;
 
