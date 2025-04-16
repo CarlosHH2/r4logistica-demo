@@ -89,9 +89,9 @@ const MapDisplay: React.FC<MapDisplayProps> = ({ onAddressSelect }) => {
       <div className="p-4 border-b">
         <div className="mb-4">
           <div className="relative">
-            <AddressAutofill accessToken={mapboxgl.accessToken} onRetrieve={handleAddressSelection}>
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+            <div id="address-autofill-container">
+              <AddressAutofill accessToken={mapboxgl.accessToken} onRetrieve={handleAddressSelection}>
                 <Input
                   placeholder="Buscar dirección..."
                   className="pl-8"
@@ -99,8 +99,8 @@ const MapDisplay: React.FC<MapDisplayProps> = ({ onAddressSelect }) => {
                   value={addressQuery}
                   onChange={(e) => setAddressQuery(e.target.value)}
                 />
-              </div>
-            </AddressAutofill>
+              </AddressAutofill>
+            </div>
           </div>
         </div>
         <div className="text-sm text-muted-foreground">
