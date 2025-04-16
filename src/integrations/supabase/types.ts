@@ -9,6 +9,66 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      orders: {
+        Row: {
+          administrative_area: string
+          country: Database["public"]["Enums"]["country_code"] | null
+          created_at: string
+          id: string
+          int_number: string | null
+          is_manual: boolean | null
+          lat: number | null
+          lng: number | null
+          neighborhood: string
+          notes: string | null
+          number: string
+          postal_code: string
+          reference: string | null
+          street: string
+          sub_administrative_area: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          administrative_area: string
+          country?: Database["public"]["Enums"]["country_code"] | null
+          created_at?: string
+          id?: string
+          int_number?: string | null
+          is_manual?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          neighborhood: string
+          notes?: string | null
+          number: string
+          postal_code: string
+          reference?: string | null
+          street: string
+          sub_administrative_area: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          administrative_area?: string
+          country?: Database["public"]["Enums"]["country_code"] | null
+          created_at?: string
+          id?: string
+          int_number?: string | null
+          is_manual?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          neighborhood?: string
+          notes?: string | null
+          number?: string
+          postal_code?: string
+          reference?: string | null
+          street?: string
+          sub_administrative_area?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -44,7 +104,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      country_code: "MX"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -159,6 +219,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      country_code: ["MX"],
+    },
   },
 } as const
