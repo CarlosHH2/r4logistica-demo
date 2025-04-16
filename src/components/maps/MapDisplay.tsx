@@ -3,9 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from '@/components/ui/card';
-import { AddressAutofill, useAddressAutofill } from '@mapbox/search-js-react';
+import { AddressAutofill } from '@mapbox/search-js-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Search, MapPin } from 'lucide-react';
 
 // Set your Mapbox token
