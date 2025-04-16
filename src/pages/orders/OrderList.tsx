@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
@@ -6,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Download, Filter, Plus, Search, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Filter, Plus, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Order } from '@/types/order';
+import CsvImport from '@/components/orders/CsvImport';
 
 const OrderList = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,9 +38,10 @@ const OrderList = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Órdenes</h1>
         <div className="flex space-x-2">
+          <CsvImport />
           <Button variant="outline" size="sm">
-            <Upload className="h-4 w-4 mr-2" />
-            Importar
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
           </Button>
           <Button size="sm">
             <Plus className="h-4 w-4 mr-2" />
