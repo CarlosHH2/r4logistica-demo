@@ -88,18 +88,20 @@ const MapDisplay: React.FC<MapDisplayProps> = ({ onAddressSelect }) => {
     <Card className="h-full flex flex-col">
       <div className="p-4 border-b">
         <div className="mb-4">
-          <AddressAutofill accessToken={mapboxgl.accessToken} onRetrieve={handleAddressSelection}>
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-              <Input
-                placeholder="Buscar dirección..."
-                className="pl-8"
-                autoComplete="street-address"
-                value={addressQuery}
-                onChange={(e) => setAddressQuery(e.target.value)}
-              />
-            </div>
-          </AddressAutofill>
+          <div className="relative">
+            <AddressAutofill accessToken={mapboxgl.accessToken} onRetrieve={handleAddressSelection}>
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                <Input
+                  placeholder="Buscar dirección..."
+                  className="pl-8"
+                  autoComplete="street-address"
+                  value={addressQuery}
+                  onChange={(e) => setAddressQuery(e.target.value)}
+                />
+              </div>
+            </AddressAutofill>
+          </div>
         </div>
         <div className="text-sm text-muted-foreground">
           <p className="flex items-center">
