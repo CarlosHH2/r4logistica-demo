@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,7 @@ import TrackingMap from "./pages/tracking/TrackingMap";
 import DocumentList from "./pages/documents/DocumentList";
 import Settings from "./pages/settings/Settings";
 import NotFound from "./pages/NotFound";
+import CreateManualOrder from "./pages/orders/CreateManualOrder";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +37,7 @@ const App = () => (
             <Route index element={<Dashboard />} />
             <Route path="create-user" element={<CreateUser />} />
             <Route path="orders" element={<OrderList />} />
+            <Route path="manual-order" element={<CreateManualOrder />} />
             <Route path="routes" element={<RouteList />} />
             <Route path="packages" element={<PackageList />} />
             <Route path="inventory" element={<InventoryList />} />

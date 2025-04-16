@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BookOpen, ChevronLeft, ClipboardList, Cog, FileBox, Home, LayoutDashboard, Map, Package, Truck, Users } from 'lucide-react';
+import { BookOpen, ChevronLeft, ClipboardList, Cog, FileBox, FilePen, Home, LayoutDashboard, Map, Package, Truck, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SidebarNavLink from './SidebarNavLink';
 import SidebarNavGroup from './SidebarNavGroup';
@@ -41,6 +41,7 @@ const Sidebar: React.FC = () => {
           <div className="flex flex-col items-center space-y-4 mt-4">
             <SidebarNavLink to="/admin" icon={LayoutDashboard} label="" exactMatch />
             <SidebarNavLink to="/admin/orders" icon={ClipboardList} label="" />
+            <SidebarNavLink to="/admin/manual-order" icon={FilePen} label="" />
             <SidebarNavLink to="/admin/routes" icon={Map} label="" />
             <SidebarNavLink to="/admin/packages" icon={Package} label="" />
             <SidebarNavLink to="/admin/inventory" icon={FileBox} label="" />
@@ -56,6 +57,7 @@ const Sidebar: React.FC = () => {
             
             <SidebarNavGroup title="Gestión" defaultOpen>
               <SidebarNavLink to="/admin/orders" icon={ClipboardList} label="Órdenes" />
+              <SidebarNavLink to="/admin/manual-order" icon={FilePen} label="Orden Manual" />
               <SidebarNavLink to="/admin/routes" icon={Map} label="Rutas" />
               <SidebarNavLink to="/admin/packages" icon={Package} label="Paquetes" />
             </SidebarNavGroup>
