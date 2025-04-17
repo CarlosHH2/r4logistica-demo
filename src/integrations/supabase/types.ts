@@ -9,6 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      operators: {
+        Row: {
+          birth_date: string
+          created_at: string
+          curp: string
+          email: string
+          id: string
+          lastname: string
+          name: string
+          offer_source: string
+          phone: string
+          rfc: string
+          second_lastname: string
+          sex: string
+          short_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          birth_date: string
+          created_at?: string
+          curp: string
+          email: string
+          id?: string
+          lastname: string
+          name: string
+          offer_source: string
+          phone: string
+          rfc: string
+          second_lastname: string
+          sex: string
+          short_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          birth_date?: string
+          created_at?: string
+          curp?: string
+          email?: string
+          id?: string
+          lastname?: string
+          name?: string
+          offer_source?: string
+          phone?: string
+          rfc?: string
+          second_lastname?: string
+          sex?: string
+          short_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           administrative_area: string

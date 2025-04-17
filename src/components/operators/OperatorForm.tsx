@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, User, Mail, Phone, HelpCircle, FileText, CreditCard, Car } from 'lucide-react';
+import { CalendarIcon, User, Mail, Phone, HelpCircle, FileText, CreditCard, Car } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -15,6 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import VehicleForm from './VehicleForm';
 import DocumentUpload from './DocumentUpload';
 
@@ -34,12 +36,15 @@ const operatorFormSchema = z.object({
   email: z.string().email({ message: 'Email inválido' }),
   phone: z.string().min(10, { message: 'El teléfono debe tener al menos 10 dígitos' }),
   offerSource: z.string().min(1, { message: 'Por favor indica cómo se enteró de la oferta' }),
+  activeTab: z.enum(['personal', 'documents', 'vehicles']).default('personal'),
 });
 
 type OperatorFormValues = z.infer<typeof operatorFormSchema>;
 
 const OperatorForm: React.FC = () => {
   const [vehicles, setVehicles] = useState<any[]>([]);
+  const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Default values for the form
   const defaultValues: Partial<OperatorFormValues> = {
@@ -57,10 +62,48 @@ const OperatorForm: React.FC = () => {
     defaultValues,
   });
 
-  function onSubmit(data: OperatorFormValues) {
-    console.log('Form submitted:', data);
-    console.log('Vehicles:', vehicles);
-    // Here you would typically send the data to an API
+  async function onSubmit(data: OperatorFormValues) {
+    try {
+      const { data: newOperator, error } = await supabase
+        .from('operators')
+        .insert([
+          {
+            name: data.name,
+            lastname: data.lastname,
+            second_lastname: data.secondLastname,
+            sex: data.sex,
+            birth_date: data.birthDate,
+            curp: data.curp,
+            rfc: data.rfc,
+            email: data.email,
+            phone: data.phone,
+            offer_source: data.offerSource,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "La información del operador ha sido guardada.",
+      });
+
+      // Only navigate if we're in the personal tab
+      if (form.watch('activeTab') === 'personal') {
+        // Stay on the same page but switch to the documents tab
+        form.setValue('activeTab', 'documents');
+      }
+
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Hubo un error al guardar la información.",
+      });
+    }
   }
 
   const addVehicle = (vehicle: any) => {
@@ -70,7 +113,12 @@ const OperatorForm: React.FC = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Tabs defaultValue="personal" className="w-full">
+        <Tabs 
+          defaultValue="personal" 
+          value={form.watch('activeTab')}
+          onValueChange={(value) => form.setValue('activeTab', value)}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="personal">Datos Personales</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
@@ -298,6 +346,18 @@ const OperatorForm: React.FC = () => {
                   )}
                 />
               </CardContent>
+              <CardFooter className="flex justify-end space-x-2 mt-4">
+                <Button 
+                  variant="outline" 
+                  type="button"
+                  onClick={() => navigate('/admin/operators')}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  Guardar y Continuar
+                </Button>
+              </CardFooter>
             </Card>
           </TabsContent>
           
@@ -334,11 +394,6 @@ const OperatorForm: React.FC = () => {
             )}
           </TabsContent>
         </Tabs>
-        
-        <div className="flex justify-end space-x-2">
-          <Button variant="outline" type="button">Cancelar</Button>
-          <Button type="submit">Guardar Operador</Button>
-        </div>
       </form>
     </Form>
   );
