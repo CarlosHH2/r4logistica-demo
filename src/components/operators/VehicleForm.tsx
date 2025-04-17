@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Car, Plus, Camera, FileText, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Car, Plus, Camera, FileText, Shield, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
