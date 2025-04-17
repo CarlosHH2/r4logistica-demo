@@ -13,6 +13,8 @@ import RouteList from "./pages/routes/RouteList";
 import PackageList from "./pages/packages/PackageList";
 import InventoryList from "./pages/inventory/InventoryList";
 import FleetList from "./pages/fleet/FleetList";
+import OperatorList from "./pages/operators/OperatorList";
+import OperatorRegistration from "./pages/operators/OperatorRegistration";
 import TmsList from "./pages/tms/TmsList";
 import TrackingMap from "./pages/tracking/TrackingMap";
 import DocumentList from "./pages/documents/DocumentList";
@@ -43,6 +45,8 @@ const App = () => (
             <Route path="packages" element={<PackageList />} />
             <Route path="inventory" element={<InventoryList />} />
             <Route path="fleet" element={<FleetList />} />
+            <Route path="operators" element={<OperatorList />} />
+            <Route path="operators/new" element={<OperatorRegistration />} />
             <Route path="tms" element={<TmsList />} />
             <Route path="tracking" element={<TrackingMap />} />
             <Route path="documents" element={<DocumentList />} />

@@ -46,6 +46,7 @@ const Sidebar: React.FC = () => {
             <SidebarNavLink to="/admin/packages" icon={Package} label="" />
             <SidebarNavLink to="/admin/inventory" icon={FileBox} label="" />
             <SidebarNavLink to="/admin/fleet" icon={Truck} label="" />
+            <SidebarNavLink to="/admin/operators" icon={Users} label="" />
             <SidebarNavLink to="/admin/tms" icon={Home} label="" />
             <SidebarNavLink to="/admin/tracking" icon={Map} label="" />
             <SidebarNavLink to="/admin/documents" icon={BookOpen} label="" />
@@ -65,6 +66,7 @@ const Sidebar: React.FC = () => {
             <SidebarNavGroup title="Inventario y Flota">
               <SidebarNavLink to="/admin/inventory" icon={FileBox} label="Inventario" />
               <SidebarNavLink to="/admin/fleet" icon={Truck} label="Flota" />
+              <SidebarNavLink to="/admin/operators" icon={Users} label="Operadores" />
             </SidebarNavGroup>
             
             <SidebarNavGroup title="Operaciones">
