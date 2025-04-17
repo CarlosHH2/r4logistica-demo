@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -75,18 +74,22 @@ const MapDisplay: React.FC<MapDisplayProps> = ({ onAddressSelect }) => {
     onAddressSelect(address);
   };
 
-  // Create a wrapper component to properly use AddressAutofill
-  const AddressAutofillWrapper = () => (
-    <AddressAutofill accessToken={mapboxgl.accessToken} onRetrieve={handleAddressSelection}>
-      <Input
-        placeholder="Buscar dirección..."
-        className="pl-8"
-        autoComplete="street-address"
-        value={addressQuery}
-        onChange={(e) => setAddressQuery(e.target.value)}
-      />
-    </AddressAutofill>
-  );
+  const renderAddressAutofill = () => {
+    return React.createElement(
+      AddressAutofill,
+      {
+        accessToken: mapboxgl.accessToken,
+        onRetrieve: handleAddressSelection
+      },
+      React.createElement(Input, {
+        placeholder: "Buscar dirección...",
+        className: "pl-8",
+        autoComplete: "street-address",
+        value: addressQuery,
+        onChange: (e) => setAddressQuery(e.target.value)
+      })
+    );
+  };
 
   return (
     <Card className="h-full flex flex-col">
@@ -95,7 +98,7 @@ const MapDisplay: React.FC<MapDisplayProps> = ({ onAddressSelect }) => {
           <div className="relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
             <div id="address-autofill-container">
-              <AddressAutofillWrapper />
+              {renderAddressAutofill()}
             </div>
           </div>
         </div>
