@@ -15,6 +15,7 @@ import InventoryList from "./pages/inventory/InventoryList";
 import FleetList from "./pages/fleet/FleetList";
 import OperatorList from "./pages/operators/OperatorList";
 import OperatorRegistration from "./pages/operators/OperatorRegistration";
+import OperatorEdit from "./pages/operators/OperatorEdit";
 import TmsList from "./pages/tms/TmsList";
 import TrackingMap from "./pages/tracking/TrackingMap";
 import DocumentList from "./pages/documents/DocumentList";

@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import OperatorForm from '@/components/operators/OperatorForm';
+import { OperatorFormValues } from '@/lib/schemas/operator';
 
 const OperatorEdit: React.FC = () => {
   const { id } = useParams();
@@ -22,10 +23,23 @@ const OperatorEdit: React.FC = () => {
       if (error) throw error;
       if (!data) throw new Error('Operador no encontrado');
       
-      return {
-        ...data,
+      // Map the database fields to the form fields with proper typing
+      const formattedOperator: Partial<OperatorFormValues> = {
+        id: data.id,
+        name: data.name,
+        lastname: data.lastname,
+        secondLastname: data.second_lastname,
+        sex: data.sex as 'masculino' | 'femenino' | 'otro',
         birthDate: new Date(data.birth_date),
+        curp: data.curp,
+        rfc: data.rfc,
+        email: data.email,
+        phone: data.phone,
+        offerSource: data.offer_source,
+        activeTab: 'personal',
       };
+      
+      return formattedOperator;
     },
   });
 

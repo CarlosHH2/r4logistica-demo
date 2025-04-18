@@ -2,6 +2,7 @@
 import { z } from 'zod';
 
 export const operatorFormSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
   lastname: z.string().min(2, { message: 'El apellido paterno debe tener al menos 2 caracteres' }),
   secondLastname: z.string().min(2, { message: 'El apellido materno debe tener al menos 2 caracteres' }),
