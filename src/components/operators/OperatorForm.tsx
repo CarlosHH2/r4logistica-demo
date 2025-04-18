@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { operatorFormSchema, type OperatorFormValues, type VehicleFormValues } from '@/lib/schemas/operator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface OperatorFormProps {
   defaultValues?: Partial<OperatorFormValues>;
@@ -26,6 +27,7 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<{ url: string; type: string } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -200,6 +202,56 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
         description: "Error al eliminar el documento",
       });
     }
+  };
+
+  const handlePreviewDocument = async (filePath: string, documentType: string) => {
+    try {
+      const { data: { publicUrl } } = supabase.storage
+        .from('operator-documents')
+        .getPublicUrl(filePath);
+
+      setSelectedDocument({ 
+        url: publicUrl, 
+        type: documentType 
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo previsualizar el documento",
+      });
+    }
+  };
+
+  const renderDocumentPreview = () => {
+    if (!selectedDocument) return null;
+
+    const isImage = ['jpg', 'jpeg', 'png', 'gif'].some(ext => 
+      selectedDocument.url.toLowerCase().includes(ext)
+    );
+
+    return (
+      <Dialog open={!!selectedDocument} onOpenChange={() => setSelectedDocument(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Previsualización de {selectedDocument.type}</DialogTitle>
+          </DialogHeader>
+          {isImage ? (
+            <img 
+              src={selectedDocument.url} 
+              alt={`Documento ${selectedDocument.type}`} 
+              className="max-w-full max-h-[70vh] object-contain"
+            />
+          ) : (
+            <iframe 
+              src={selectedDocument.url} 
+              className="w-full h-[70vh]"
+              title={`Documento ${selectedDocument.type}`}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   async function onSubmit(data: OperatorFormValues) {
@@ -543,35 +595,24 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
                         <p className="text-sm text-muted-foreground">{doc.file_name}</p>
                       </div>
                     </div>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handlePreviewDocument(doc.file_path, doc.document_type)}
+                      >
+                        Previsualizar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {['INE', 'Licencia', 'Comprobante de domicilio', 'CURP'].map((docType) => (
-                    <Card key={docType} className="p-4">
-                      <div className="flex flex-col items-center space-y-2">
-                        <Upload className="h-8 w-8 text-muted-foreground" />
-                        <p className="font-medium">{docType}</p>
-                        <Input
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleFileUpload(file, docType);
-                          }}
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </Card>
-                  ))}
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -608,6 +649,7 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
           </TabsContent>
         </Tabs>
       </form>
+      {renderDocumentPreview()}
     </Form>
   );
 };
