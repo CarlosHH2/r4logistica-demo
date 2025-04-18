@@ -18,6 +18,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { operatorFormSchema, type OperatorFormValues, type VehicleFormValues } from '@/lib/schemas/operator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import NewVehicleForm from './vehicle/NewVehicleForm';
 
 interface OperatorFormProps {
   defaultValues?: Partial<OperatorFormValues>;
@@ -645,7 +646,7 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
                   Lista de vehículos registrados
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 {vehicles.map((vehicle) => (
                   <div key={vehicle.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
@@ -664,6 +665,13 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
                     </Button>
                   </div>
                 ))}
+
+                {defaultValues?.id && (
+                  <NewVehicleForm 
+                    operatorId={defaultValues.id} 
+                    onComplete={loadVehiclesAndDocuments} 
+                  />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
