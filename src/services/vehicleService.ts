@@ -48,6 +48,9 @@ export const vehicleService = {
       if (!operatorId) {
         throw new Error('ID del operador no proporcionado');
       }
+
+      console.log('Registrando vehículo para operador:', operatorId);
+      console.log('Datos del vehículo:', data);
       
       const vehicleData = {
         operator_id: operatorId,
@@ -59,22 +62,19 @@ export const vehicleService = {
       };
 
       console.log('Guardando datos del vehículo:', vehicleData);
-      const { data: vehicle, error: vehicleError } = await supabase
+      
+      const { data: vehicle, error } = await supabase
         .from('operator_vehicles')
         .insert(vehicleData)
         .select()
         .single();
 
-      if (vehicleError) {
-        console.error('Error al guardar vehículo:', vehicleError);
-        throw vehicleError;
+      if (error) {
+        console.error('Error al guardar vehículo:', error);
+        throw error;
       }
 
-      if (!vehicle) {
-        throw new Error('No se pudo obtener el ID del vehículo creado');
-      }
-
-      console.log('Vehículo guardado con éxito:', vehicle);
+      console.log('Vehículo registrado exitosamente:', vehicle);
       return vehicle;
     } catch (error) {
       console.error('Error en registerVehicle:', error);
