@@ -42,9 +42,16 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
   const registerVehicleInfo = async (data: VehicleFormValues) => {
     setIsLoading(true);
     try {
-      console.log('Registering vehicle info:', data);
+      console.log('Registrando datos del vehículo:', data);
+      console.log('ID del operador:', operatorId);
+      
+      // Verificar que el operatorId existe
+      if (!operatorId) {
+        throw new Error('ID del operador no encontrado');
+      }
+      
       const vehicle = await vehicleService.registerVehicle(operatorId, data);
-      console.log('Vehicle registered successfully:', vehicle);
+      console.log('Vehículo registrado correctamente:', vehicle);
       
       setVehicleId(vehicle.id);
       setCurrentStep('uploads');
@@ -53,7 +60,7 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
         description: "Ahora puedes cargar las fotos y documentos",
       });
     } catch (error) {
-      console.error('Error registering vehicle:', error);
+      console.error('Error al registrar vehículo:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -94,21 +101,23 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
 
     setIsLoading(true);
     try {
-      // Ensure the bucket exists
+      // Asegurar que el bucket existe
       await vehicleService.createBucketIfNotExists();
       
-      // Upload photos
+      console.log('Cargando fotos y documentos para el vehículo:', vehicleId);
+      
+      // Subir fotos
       for (const [position, file] of Object.entries(photos)) {
         if (file) {
-          console.log(`Uploading ${position} photo`);
+          console.log(`Subiendo foto ${position}`);
           await vehicleService.uploadFile(vehicleId, file, position, 'photos');
         }
       }
 
-      // Upload documents
+      // Subir documentos
       for (const [docType, file] of Object.entries(documents)) {
         if (file) {
-          console.log(`Uploading ${docType} document`);
+          console.log(`Subiendo documento ${docType}`);
           await vehicleService.uploadFile(vehicleId, file, docType, 'docs');
         }
       }
@@ -126,7 +135,7 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
       onComplete();
 
     } catch (error) {
-      console.error('Error uploading files:', error);
+      console.error('Error al cargar archivos:', error);
       toast({
         variant: "destructive",
         title: "Error",

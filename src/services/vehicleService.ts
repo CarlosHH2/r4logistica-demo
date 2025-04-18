@@ -13,51 +13,72 @@ export const vehicleService = {
           public: true
         });
         if (error) throw error;
-        console.log('Created bucket: operator-documents');
+        console.log('Bucket creado: operator-documents');
       }
     } catch (error) {
-      console.error('Error checking/creating bucket:', error);
+      console.error('Error al verificar/crear bucket:', error);
       throw error;
     }
   },
 
   async uploadFile(vehicleId: string, file: File, type: string, category: 'photos' | 'docs') {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${vehicleId}/${category}/${type}_${Date.now()}.${fileExt}`;
-    
-    console.log(`Uploading ${type} ${category}: ${fileName}`);
-    const { error: uploadError } = await supabase.storage
-      .from('operator-documents')
-      .upload(fileName, file);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${vehicleId}/${category}/${type}_${Date.now()}.${fileExt}`;
+      
+      console.log(`Subiendo ${type} ${category}: ${fileName}`);
+      const { error: uploadError } = await supabase.storage
+        .from('operator-documents')
+        .upload(fileName, file);
 
-    if (uploadError) {
-      console.error(`Error uploading ${type} ${category}:`, uploadError);
-      throw uploadError;
+      if (uploadError) {
+        console.error(`Error al subir ${type} ${category}:`, uploadError);
+        throw uploadError;
+      }
+      
+      console.log(`Archivo ${fileName} subido correctamente`);
+    } catch (error) {
+      console.error(`Error en uploadFile:`, error);
+      throw error;
     }
   },
 
   async registerVehicle(operatorId: string, data: VehicleFormValues) {
-    const vehicleData = {
-      operator_id: operatorId,
-      brand: data.brand,
-      model: data.model,
-      year: Number(data.year),
-      plate: data.plate,
-      color: data.color || null,
-    };
+    try {
+      if (!operatorId) {
+        throw new Error('ID del operador no proporcionado');
+      }
+      
+      const vehicleData = {
+        operator_id: operatorId,
+        brand: data.brand,
+        model: data.model,
+        year: Number(data.year),
+        plate: data.plate,
+        color: data.color || null,
+      };
 
-    console.log('Saving vehicle data:', vehicleData);
-    const { data: vehicle, error: vehicleError } = await supabase
-      .from('operator_vehicles')
-      .insert(vehicleData)
-      .select()
-      .single();
+      console.log('Guardando datos del vehículo:', vehicleData);
+      const { data: vehicle, error: vehicleError } = await supabase
+        .from('operator_vehicles')
+        .insert(vehicleData)
+        .select()
+        .single();
 
-    if (vehicleError) {
-      console.error('Error saving vehicle:', vehicleError);
-      throw vehicleError;
+      if (vehicleError) {
+        console.error('Error al guardar vehículo:', vehicleError);
+        throw vehicleError;
+      }
+
+      if (!vehicle) {
+        throw new Error('No se pudo obtener el ID del vehículo creado');
+      }
+
+      console.log('Vehículo guardado con éxito:', vehicle);
+      return vehicle;
+    } catch (error) {
+      console.error('Error en registerVehicle:', error);
+      throw error;
     }
-
-    return vehicle;
   }
 };
