@@ -18,7 +18,6 @@ interface OperatorFormProps {
 }
 
 const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
-  const [vehicles, setVehicles] = useState<any[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -38,21 +37,12 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
 
   React.useEffect(() => {
     if (defaultValues?.id) {
-      loadVehiclesAndDocuments();
+      loadDocuments();
     }
   }, [defaultValues?.id]);
 
-  const loadVehiclesAndDocuments = async () => {
+  const loadDocuments = async () => {
     if (!defaultValues?.id) return;
-
-    const { data: vehiclesData } = await supabase
-      .from('operator_vehicles')
-      .select('*')
-      .eq('operator_id', defaultValues.id);
-
-    if (vehiclesData) {
-      setVehicles(vehiclesData);
-    }
 
     const { data: documentsData } = await supabase
       .from('operator_documents')
@@ -124,30 +114,6 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
     } catch (error) {
       console.error('Error:', error);
       throw error;
-    }
-  };
-
-  const handleVehicleDelete = async (vehicleId: string) => {
-    try {
-      const { error } = await supabase
-        .from('operator_vehicles')
-        .delete()
-        .eq('id', vehicleId);
-
-      if (error) throw error;
-
-      setVehicles(vehicles.filter(v => v.id !== vehicleId));
-      toast({
-        title: "Éxito",
-        description: "Vehículo eliminado correctamente",
-      });
-    } catch (error) {
-      console.error('Error:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Error al eliminar el vehículo",
-      });
     }
   };
 
@@ -247,12 +213,7 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
 
             <TabsContent value="vehicles" className="space-y-4 mt-4">
               {defaultValues?.id && (
-                <OperatorVehiclesTab
-                  operatorId={defaultValues.id}
-                  vehicles={vehicles}
-                  onVehicleDelete={handleVehicleDelete}
-                  onComplete={loadVehiclesAndDocuments}
-                />
+                <OperatorVehiclesTab operatorId={defaultValues.id} />
               )}
             </TabsContent>
           </Tabs>
@@ -263,4 +224,3 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
 };
 
 export default OperatorForm;
-
