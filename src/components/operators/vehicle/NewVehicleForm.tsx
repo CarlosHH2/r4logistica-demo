@@ -53,6 +53,27 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
     },
   });
 
+  const createBucketIfNotExists = async () => {
+    try {
+      // Check if bucket exists
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'operator-documents');
+      
+      if (!bucketExists) {
+        // Create the bucket if it doesn't exist
+        const { error } = await supabase.storage.createBucket('operator-documents', {
+          public: true
+        });
+        
+        if (error) throw error;
+        console.log('Created bucket: operator-documents');
+      }
+    } catch (error) {
+      console.error('Error checking/creating bucket:', error);
+      throw error;
+    }
+  };
+
   const onSubmit = async (data: VehicleFormValues) => {
     const allPhotosUploaded = Object.values(vehiclePhotos).every(photo => photo !== null);
     if (!allPhotosUploaded) {
@@ -75,7 +96,10 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
 
     setIsLoading(true);
     try {
-      // Primero registramos el vehículo
+      // Ensure the bucket exists before uploading
+      await createBucketIfNotExists();
+      
+      // Register the vehicle
       const vehicleData = {
         operator_id: operatorId,
         brand: data.brand,
@@ -85,50 +109,53 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
         color: data.color || null,
       };
 
+      console.log('Saving vehicle data:', vehicleData);
       const { data: vehicle, error: vehicleError } = await supabase
         .from('operator_vehicles')
         .insert(vehicleData)
         .select()
         .single();
 
-      if (vehicleError) throw vehicleError;
-
-      // Verificamos que el bucket operator-documents exista, si no, lo creamos
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(bucket => bucket.name === 'operator-documents');
-      
-      if (!bucketExists) {
-        // Crear el bucket si no existe
-        await supabase.storage.createBucket('operator-documents', {
-          public: false
-        });
+      if (vehicleError) {
+        console.error('Error saving vehicle:', vehicleError);
+        throw vehicleError;
       }
+      
+      console.log('Vehicle saved successfully:', vehicle);
 
-      // Subimos las fotos
+      // Upload the photos
       for (const [position, file] of Object.entries(vehiclePhotos)) {
         if (file) {
           const fileExt = file.name.split('.').pop();
           const fileName = `${vehicle.id}/photos/${position}_${Date.now()}.${fileExt}`;
           
+          console.log(`Uploading ${position} photo: ${fileName}`);
           const { error: uploadError } = await supabase.storage
             .from('operator-documents')
             .upload(fileName, file);
 
-          if (uploadError) throw uploadError;
+          if (uploadError) {
+            console.error(`Error uploading ${position} photo:`, uploadError);
+            throw uploadError;
+          }
         }
       }
 
-      // Subimos los documentos
+      // Upload the documents
       for (const [docType, file] of Object.entries(documents)) {
         if (file) {
           const fileExt = file.name.split('.').pop();
           const fileName = `${vehicle.id}/docs/${docType}_${Date.now()}.${fileExt}`;
           
+          console.log(`Uploading ${docType} document: ${fileName}`);
           const { error: uploadError } = await supabase.storage
             .from('operator-documents')
             .upload(fileName, file);
 
-          if (uploadError) throw uploadError;
+          if (uploadError) {
+            console.error(`Error uploading ${docType} document:`, uploadError);
+            throw uploadError;
+          }
         }
       }
 
@@ -155,7 +182,7 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Error al registrar el vehículo",
+        description: "Error al registrar el vehículo. Por favor intente nuevamente.",
       });
     } finally {
       setIsLoading(false);
