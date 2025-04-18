@@ -1,8 +1,26 @@
 
-import { Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  return <Navigate to="/admin" replace />;
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/login", { replace: true });
+      }
+    };
+
+    checkSession();
+  }, [navigate]);
+
+  return null;
 };
 
 export default Index;

@@ -1,10 +1,31 @@
-
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
 import Sidebar from '@/components/sidebar/Sidebar';
 import { BellIcon, MessageSquare, Search } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/login", { replace: true });
+      }
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/login", { replace: true });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar />
