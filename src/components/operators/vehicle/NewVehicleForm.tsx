@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Car } from 'lucide-react';
@@ -23,6 +23,8 @@ interface NewVehicleFormProps {
 const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete }) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [currentStep, setCurrentStep] = useState<'info' | 'uploads'>('info');
+  const [vehicleId, setVehicleId] = useState<string | null>(null);
   const { photos, updatePhoto, resetPhotos, areAllPhotosUploaded } = useVehiclePhotos();
   const { documents, updateDocument, resetDocuments } = useVehicleDocuments();
 
@@ -37,7 +39,41 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
     },
   });
 
-  const onSubmit = async (data: VehicleFormValues) => {
+  const registerVehicleInfo = async (data: VehicleFormValues) => {
+    setIsLoading(true);
+    try {
+      console.log('Registering vehicle info:', data);
+      const vehicle = await vehicleService.registerVehicle(operatorId, data);
+      console.log('Vehicle registered successfully:', vehicle);
+      
+      setVehicleId(vehicle.id);
+      setCurrentStep('uploads');
+      toast({
+        title: "Vehículo creado",
+        description: "Ahora puedes cargar las fotos y documentos",
+      });
+    } catch (error) {
+      console.error('Error registering vehicle:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al registrar el vehículo. Por favor intente nuevamente.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const uploadFiles = async () => {
+    if (!vehicleId) {
+      toast({
+        variant: "destructive", 
+        title: "Error",
+        description: "ID de vehículo no encontrado",
+      });
+      return;
+    }
+
     if (!areAllPhotosUploaded()) {
       toast({
         variant: "destructive",
@@ -58,39 +94,43 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
 
     setIsLoading(true);
     try {
+      // Ensure the bucket exists
       await vehicleService.createBucketIfNotExists();
-      const vehicle = await vehicleService.registerVehicle(operatorId, data);
       
       // Upload photos
       for (const [position, file] of Object.entries(photos)) {
         if (file) {
-          await vehicleService.uploadFile(vehicle.id, file, position, 'photos');
+          console.log(`Uploading ${position} photo`);
+          await vehicleService.uploadFile(vehicleId, file, position, 'photos');
         }
       }
 
       // Upload documents
       for (const [docType, file] of Object.entries(documents)) {
         if (file) {
-          await vehicleService.uploadFile(vehicle.id, file, docType, 'docs');
+          console.log(`Uploading ${docType} document`);
+          await vehicleService.uploadFile(vehicleId, file, docType, 'docs');
         }
       }
 
       toast({
         title: "Éxito",
-        description: "Vehículo registrado correctamente",
+        description: "Archivos cargados correctamente",
       });
       
       form.reset();
       resetPhotos();
       resetDocuments();
+      setCurrentStep('info');
+      setVehicleId(null);
       onComplete();
 
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error uploading files:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Error al registrar el vehículo. Por favor intente nuevamente.",
+        description: "Error al cargar los archivos. Por favor intente nuevamente.",
       });
     } finally {
       setIsLoading(false);
@@ -102,14 +142,24 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
       <CardHeader>
         <CardTitle>Nuevo Vehículo</CardTitle>
         <CardDescription>
-          Registra un nuevo vehículo para este operador
+          {currentStep === 'info' 
+            ? 'Registra los datos básicos del vehículo' 
+            : 'Carga las fotos y documentos del vehículo'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <VehicleBasicInfo form={form} />
-
+        {currentStep === 'info' ? (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(registerVehicleInfo)} className="space-y-6">
+              <VehicleBasicInfo form={form} />
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                <Car className="mr-2 h-4 w-4" />
+                {isLoading ? "Registrando..." : "Registrar Información del Vehículo"}
+              </Button>
+            </form>
+          </Form>
+        ) : (
+          <div className="space-y-6">
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Fotos del Vehículo</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -159,12 +209,25 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              <Car className="mr-2 h-4 w-4" />
-              {isLoading ? "Registrando..." : "Registrar Vehículo"}
-            </Button>
-          </form>
-        </Form>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setCurrentStep('info')}
+                disabled={isLoading}
+              >
+                Volver
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={uploadFiles}
+                disabled={isLoading}
+              >
+                {isLoading ? "Cargando archivos..." : "Cargar Archivos"}
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
