@@ -1,17 +1,19 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Car } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { vehicleSchema, type VehicleFormValues } from '@/lib/schemas/operator';
 import VehiclePhotoUpload from './VehiclePhotoUpload';
 import VehicleDocumentUpload from './VehicleDocumentUpload';
+import VehicleBasicInfo from './VehicleBasicInfo';
+import { useVehiclePhotos } from '@/hooks/useVehiclePhotos';
+import { useVehicleDocuments } from '@/hooks/useVehicleDocuments';
+import { vehicleService } from '@/services/vehicleService';
 
 interface NewVehicleFormProps {
   operatorId: string;
@@ -20,27 +22,9 @@ interface NewVehicleFormProps {
 
 const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete }) => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const [vehiclePhotos, setVehiclePhotos] = useState<{
-    front: File | null;
-    back: File | null;
-    left: File | null;
-    right: File | null;
-  }>({
-    front: null,
-    back: null,
-    left: null,
-    right: null,
-  });
-  
-  const [documents, setDocuments] = useState<{
-    circulation: File | null;
-    insurance: File | null;
-  }>({
-    circulation: null,
-    insurance: null,
-  });
+  const [isLoading, setIsLoading] = React.useState(false);
+  const { photos, updatePhoto, resetPhotos, areAllPhotosUploaded } = useVehiclePhotos();
+  const { documents, updateDocument, resetDocuments } = useVehicleDocuments();
 
   const form = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
@@ -53,30 +37,8 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
     },
   });
 
-  const createBucketIfNotExists = async () => {
-    try {
-      // Check if bucket exists
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(bucket => bucket.name === 'operator-documents');
-      
-      if (!bucketExists) {
-        // Create the bucket if it doesn't exist
-        const { error } = await supabase.storage.createBucket('operator-documents', {
-          public: true
-        });
-        
-        if (error) throw error;
-        console.log('Created bucket: operator-documents');
-      }
-    } catch (error) {
-      console.error('Error checking/creating bucket:', error);
-      throw error;
-    }
-  };
-
   const onSubmit = async (data: VehicleFormValues) => {
-    const allPhotosUploaded = Object.values(vehiclePhotos).every(photo => photo !== null);
-    if (!allPhotosUploaded) {
+    if (!areAllPhotosUploaded()) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -96,66 +58,20 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
 
     setIsLoading(true);
     try {
-      // Ensure the bucket exists before uploading
-      await createBucketIfNotExists();
+      await vehicleService.createBucketIfNotExists();
+      const vehicle = await vehicleService.registerVehicle(operatorId, data);
       
-      // Register the vehicle
-      const vehicleData = {
-        operator_id: operatorId,
-        brand: data.brand,
-        model: data.model,
-        year: Number(data.year),
-        plate: data.plate,
-        color: data.color || null,
-      };
-
-      console.log('Saving vehicle data:', vehicleData);
-      const { data: vehicle, error: vehicleError } = await supabase
-        .from('operator_vehicles')
-        .insert(vehicleData)
-        .select()
-        .single();
-
-      if (vehicleError) {
-        console.error('Error saving vehicle:', vehicleError);
-        throw vehicleError;
-      }
-      
-      console.log('Vehicle saved successfully:', vehicle);
-
-      // Upload the photos
-      for (const [position, file] of Object.entries(vehiclePhotos)) {
+      // Upload photos
+      for (const [position, file] of Object.entries(photos)) {
         if (file) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${vehicle.id}/photos/${position}_${Date.now()}.${fileExt}`;
-          
-          console.log(`Uploading ${position} photo: ${fileName}`);
-          const { error: uploadError } = await supabase.storage
-            .from('operator-documents')
-            .upload(fileName, file);
-
-          if (uploadError) {
-            console.error(`Error uploading ${position} photo:`, uploadError);
-            throw uploadError;
-          }
+          await vehicleService.uploadFile(vehicle.id, file, position, 'photos');
         }
       }
 
-      // Upload the documents
+      // Upload documents
       for (const [docType, file] of Object.entries(documents)) {
         if (file) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${vehicle.id}/docs/${docType}_${Date.now()}.${fileExt}`;
-          
-          console.log(`Uploading ${docType} document: ${fileName}`);
-          const { error: uploadError } = await supabase.storage
-            .from('operator-documents')
-            .upload(fileName, file);
-
-          if (uploadError) {
-            console.error(`Error uploading ${docType} document:`, uploadError);
-            throw uploadError;
-          }
+          await vehicleService.uploadFile(vehicle.id, file, docType, 'docs');
         }
       }
 
@@ -165,16 +81,8 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
       });
       
       form.reset();
-      setVehiclePhotos({
-        front: null,
-        back: null,
-        left: null,
-        right: null,
-      });
-      setDocuments({
-        circulation: null,
-        insurance: null,
-      });
+      resetPhotos();
+      resetDocuments();
       onComplete();
 
     } catch (error) {
@@ -200,82 +108,7 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="brand"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Marca</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Marca del vehículo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="model"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Modelo</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Modelo del vehículo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="year"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Año</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="Año del vehículo" 
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="plate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Placa</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Número de placa" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="color"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Color</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Color del vehículo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <VehicleBasicInfo form={form} />
 
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Fotos del Vehículo</h3>
@@ -283,26 +116,26 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
                 <VehiclePhotoUpload
                   position="front"
                   label="Frente"
-                  photo={vehiclePhotos.front}
-                  onPhotoChange={(file) => setVehiclePhotos(prev => ({ ...prev, front: file }))}
+                  photo={photos.front}
+                  onPhotoChange={(file) => updatePhoto('front', file)}
                 />
                 <VehiclePhotoUpload
                   position="back"
                   label="Trasera"
-                  photo={vehiclePhotos.back}
-                  onPhotoChange={(file) => setVehiclePhotos(prev => ({ ...prev, back: file }))}
+                  photo={photos.back}
+                  onPhotoChange={(file) => updatePhoto('back', file)}
                 />
                 <VehiclePhotoUpload
                   position="left"
                   label="Lateral Izquierdo"
-                  photo={vehiclePhotos.left}
-                  onPhotoChange={(file) => setVehiclePhotos(prev => ({ ...prev, left: file }))}
+                  photo={photos.left}
+                  onPhotoChange={(file) => updatePhoto('left', file)}
                 />
                 <VehiclePhotoUpload
                   position="right"
                   label="Lateral Derecho"
-                  photo={vehiclePhotos.right}
-                  onPhotoChange={(file) => setVehiclePhotos(prev => ({ ...prev, right: file }))}
+                  photo={photos.right}
+                  onPhotoChange={(file) => updatePhoto('right', file)}
                 />
               </div>
             </div>
@@ -314,13 +147,13 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
                   documentType="circulation"
                   label="Tarjeta de Circulación"
                   file={documents.circulation}
-                  onFileChange={(file) => setDocuments(prev => ({ ...prev, circulation: file }))}
+                  onFileChange={(file) => updateDocument('circulation', file)}
                 />
                 <VehicleDocumentUpload
                   documentType="insurance"
                   label="Póliza de Seguro"
                   file={documents.insurance}
-                  onFileChange={(file) => setDocuments(prev => ({ ...prev, insurance: file }))}
+                  onFileChange={(file) => updateDocument('insurance', file)}
                   required={false}
                 />
               </div>
