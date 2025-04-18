@@ -20,61 +20,79 @@ import VehicleForm from './VehicleForm';
 import DocumentUpload from './DocumentUpload';
 import { operatorFormSchema, type OperatorFormValues } from '@/lib/schemas/operator';
 
-const OperatorForm: React.FC = () => {
+interface OperatorFormProps {
+  defaultValues?: Partial<OperatorFormValues>;
+}
+
+const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Default values for the form
-  const defaultValues: Partial<OperatorFormValues> = {
-    name: '',
-    lastname: '',
-    secondLastname: '',
-    sex: undefined,
-    email: '',
-    phone: '',
-    offerSource: '',
-    activeTab: 'personal',
-  };
-
   const form = useForm<OperatorFormValues>({
     resolver: zodResolver(operatorFormSchema),
-    defaultValues,
+    defaultValues: defaultValues || {
+      name: '',
+      lastname: '',
+      secondLastname: '',
+      sex: undefined,
+      email: '',
+      phone: '',
+      offerSource: '',
+      activeTab: 'personal',
+    },
   });
 
   async function onSubmit(data: OperatorFormValues) {
     try {
-      // Format the date as an ISO string
       const formattedDate = format(data.birthDate, 'yyyy-MM-dd');
+      const operatorData = {
+        name: data.name,
+        lastname: data.lastname,
+        second_lastname: data.secondLastname,
+        sex: data.sex,
+        birth_date: formattedDate,
+        curp: data.curp,
+        rfc: data.rfc,
+        email: data.email,
+        phone: data.phone,
+        offer_source: data.offerSource,
+      };
 
-      const { data: newOperator, error } = await supabase
-        .from('operators')
-        .insert({
-          name: data.name,
-          lastname: data.lastname,
-          second_lastname: data.secondLastname,
-          sex: data.sex,
-          birth_date: formattedDate,
-          curp: data.curp,
-          rfc: data.rfc,
-          email: data.email,
-          phone: data.phone,
-          offer_source: data.offerSource,
-        })
-        .select()
-        .single();
+      let error;
+      if (defaultValues?.id) {
+        // Update existing operator
+        const { error: updateError } = await supabase
+          .from('operators')
+          .update(operatorData)
+          .eq('id', defaultValues.id);
+        error = updateError;
+      } else {
+        // Insert new operator
+        const { error: insertError } = await supabase
+          .from('operators')
+          .insert(operatorData)
+          .select()
+          .single();
+        error = insertError;
+      }
 
       if (error) throw error;
 
       toast({
         title: "Éxito",
-        description: "La información del operador ha sido guardada.",
+        description: defaultValues?.id 
+          ? "La información del operador ha sido actualizada."
+          : "La información del operador ha sido guardada.",
       });
 
       // Only navigate if we're in the personal tab
       if (form.watch('activeTab') === 'personal') {
-        // Stay on the same page but switch to the documents tab
-        form.setValue('activeTab', 'documents');
+        if (defaultValues?.id) {
+          form.setValue('activeTab', 'documents');
+        } else {
+          navigate('/admin/operators');
+        }
       }
 
     } catch (error) {

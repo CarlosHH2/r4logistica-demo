@@ -47,6 +47,7 @@ const App = () => (
             <Route path="fleet" element={<FleetList />} />
             <Route path="operators" element={<OperatorList />} />
             <Route path="operators/new" element={<OperatorRegistration />} />
+            <Route path="operators/:id/edit" element={<OperatorEdit />} />
             <Route path="tms" element={<TmsList />} />
             <Route path="tracking" element={<TrackingMap />} />
             <Route path="documents" element={<DocumentList />} />

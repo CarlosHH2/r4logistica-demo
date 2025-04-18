@@ -83,9 +83,11 @@ const OperatorList: React.FC = () => {
                     <TableCell>{operator.phone}</TableCell>
                     <TableCell>{operator.curp}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      <Link to={`/admin/operators/${operator.id}/edit`}>
+                        <Button variant="ghost" size="icon">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}
