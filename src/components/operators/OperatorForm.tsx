@@ -29,7 +29,6 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Load operator's vehicles and documents if editing
   useEffect(() => {
     if (defaultValues?.id) {
       loadVehiclesAndDocuments();
@@ -39,7 +38,6 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
   const loadVehiclesAndDocuments = async () => {
     if (!defaultValues?.id) return;
 
-    // Fetch vehicles
     const { data: vehiclesData } = await supabase
       .from('operator_vehicles')
       .select('*')
@@ -49,7 +47,6 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
       setVehicles(vehiclesData);
     }
 
-    // Fetch documents
     const { data: documentsData } = await supabase
       .from('operator_documents')
       .select('*')
@@ -77,12 +74,18 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
   const handleAddVehicle = async (vehicleData: VehicleFormValues) => {
     if (!defaultValues?.id) return;
 
+    const newVehicleData = {
+      operator_id: defaultValues.id,
+      brand: vehicleData.brand,
+      model: vehicleData.model,
+      year: vehicleData.year,
+      plate: vehicleData.plate,
+      color: vehicleData.color || null
+    };
+
     const { data, error } = await supabase
       .from('operator_vehicles')
-      .insert({
-        operator_id: defaultValues.id,
-        ...vehicleData
-      })
+      .insert(newVehicleData)
       .select()
       .single();
 
@@ -92,6 +95,7 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
         title: "Error",
         description: "Error al guardar el vehículo",
       });
+      console.error("Error saving vehicle:", error);
       return;
     }
 
@@ -129,7 +133,6 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
 
     setIsLoading(true);
     try {
-      // Upload file to storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${defaultValues.id}/${documentType}_${Date.now()}.${fileExt}`;
 
@@ -139,7 +142,6 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
 
       if (uploadError) throw uploadError;
 
-      // Create document record
       const { data, error: dbError } = await supabase
         .from('operator_documents')
         .insert({
@@ -172,14 +174,12 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
 
   const handleDeleteDocument = async (documentId: string, filePath: string) => {
     try {
-      // Delete from storage
       const { error: storageError } = await supabase.storage
         .from('operator-documents')
         .remove([filePath]);
 
       if (storageError) throw storageError;
 
-      // Delete from database
       const { error: dbError } = await supabase
         .from('operator_documents')
         .delete()
@@ -219,21 +219,26 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
       };
 
       let error;
+      let operatorId = defaultValues?.id;
+      
       if (defaultValues?.id) {
-        // Update existing operator
         const { error: updateError } = await supabase
           .from('operators')
           .update(operatorData)
           .eq('id', defaultValues.id);
         error = updateError;
       } else {
-        // Insert new operator
-        const { error: insertError } = await supabase
+        const { data: newOperator, error: insertError } = await supabase
           .from('operators')
           .insert(operatorData)
           .select()
           .single();
+        
         error = insertError;
+        if (newOperator) {
+          operatorId = newOperator.id;
+          form.setValue('id', operatorId);
+        }
       }
 
       if (error) throw error;
@@ -245,9 +250,10 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
           : "La información del operador ha sido guardada.",
       });
 
-      // Only navigate if we're in the personal tab
       if (form.watch('activeTab') === 'personal') {
         if (defaultValues?.id) {
+          form.setValue('activeTab', 'documents');
+        } else if (operatorId) {
           form.setValue('activeTab', 'documents');
         } else {
           navigate('/admin/operators');
