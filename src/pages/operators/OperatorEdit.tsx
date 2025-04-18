@@ -44,13 +44,15 @@ const OperatorEdit: React.FC = () => {
       
       return formattedOperator;
     },
-    onError: (err) => {
-      console.error('Error fetching operator:', err);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo cargar la información del operador",
-      });
+    meta: {
+      onError: (err: Error) => {
+        console.error('Error fetching operator:', err);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo cargar la información del operador",
+        });
+      }
     }
   });
 
