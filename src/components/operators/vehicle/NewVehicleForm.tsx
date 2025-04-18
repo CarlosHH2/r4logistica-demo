@@ -47,7 +47,7 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
     defaultValues: {
       brand: '',
       model: '',
-      year: 0, // Changed from empty string to 0
+      year: 0,
       plate: '',
       color: '',
     },
@@ -92,6 +92,17 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
         .single();
 
       if (vehicleError) throw vehicleError;
+
+      // Verificamos que el bucket operator-documents exista, si no, lo creamos
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'operator-documents');
+      
+      if (!bucketExists) {
+        // Crear el bucket si no existe
+        await supabase.storage.createBucket('operator-documents', {
+          public: false
+        });
+      }
 
       // Subimos las fotos
       for (const [position, file] of Object.entries(vehiclePhotos)) {
