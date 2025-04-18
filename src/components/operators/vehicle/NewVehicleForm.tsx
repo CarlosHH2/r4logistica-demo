@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { vehicleSchema, type VehicleFormValues } from '@/lib/schemas/operator';
 import VehiclePhotoUpload from './VehiclePhotoUpload';
 import VehicleDocumentUpload from './VehicleDocumentUpload';
@@ -46,7 +47,7 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
     defaultValues: {
       brand: '',
       model: '',
-      year: '',
+      year: 0, // Changed from empty string to 0
       plate: '',
       color: '',
     },
@@ -197,7 +198,12 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
                   <FormItem>
                     <FormLabel>Año</FormLabel>
                     <FormControl>
-                      <Input placeholder="Año del vehículo" {...field} />
+                      <Input 
+                        type="number" 
+                        placeholder="Año del vehículo" 
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
