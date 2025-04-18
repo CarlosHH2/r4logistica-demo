@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
-import { CalendarIcon, User, Mail, Phone, HelpCircle, FileText, CreditCard, Car } from 'lucide-react';
+import { CalendarIcon, User, Mail, Phone, HelpCircle, FileText, CreditCard, Car, Trash2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,9 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import VehicleForm from './VehicleForm';
-import DocumentUpload from './DocumentUpload';
-import { operatorFormSchema, type OperatorFormValues } from '@/lib/schemas/operator';
+import { operatorFormSchema, type OperatorFormValues, type VehicleFormValues } from '@/lib/schemas/operator';
 
 interface OperatorFormProps {
   defaultValues?: Partial<OperatorFormValues>;
@@ -26,9 +24,42 @@ interface OperatorFormProps {
 
 const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
   const [vehicles, setVehicles] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  
+
+  // Load operator's vehicles and documents if editing
+  useEffect(() => {
+    if (defaultValues?.id) {
+      loadVehiclesAndDocuments();
+    }
+  }, [defaultValues?.id]);
+
+  const loadVehiclesAndDocuments = async () => {
+    if (!defaultValues?.id) return;
+
+    // Fetch vehicles
+    const { data: vehiclesData } = await supabase
+      .from('operator_vehicles')
+      .select('*')
+      .eq('operator_id', defaultValues.id);
+
+    if (vehiclesData) {
+      setVehicles(vehiclesData);
+    }
+
+    // Fetch documents
+    const { data: documentsData } = await supabase
+      .from('operator_documents')
+      .select('*')
+      .eq('operator_id', defaultValues.id);
+
+    if (documentsData) {
+      setDocuments(documentsData);
+    }
+  };
+
   const form = useForm<OperatorFormValues>({
     resolver: zodResolver(operatorFormSchema),
     defaultValues: defaultValues || {
@@ -42,6 +73,134 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
       activeTab: 'personal',
     },
   });
+
+  const handleAddVehicle = async (vehicleData: VehicleFormValues) => {
+    if (!defaultValues?.id) return;
+
+    const { data, error } = await supabase
+      .from('operator_vehicles')
+      .insert({
+        operator_id: defaultValues.id,
+        ...vehicleData
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al guardar el vehículo",
+      });
+      return;
+    }
+
+    setVehicles([...vehicles, data]);
+    toast({
+      title: "Éxito",
+      description: "Vehículo agregado correctamente",
+    });
+  };
+
+  const handleDeleteVehicle = async (vehicleId: string) => {
+    const { error } = await supabase
+      .from('operator_vehicles')
+      .delete()
+      .eq('id', vehicleId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al eliminar el vehículo",
+      });
+      return;
+    }
+
+    setVehicles(vehicles.filter(v => v.id !== vehicleId));
+    toast({
+      title: "Éxito",
+      description: "Vehículo eliminado correctamente",
+    });
+  };
+
+  const handleFileUpload = async (file: File, documentType: string) => {
+    if (!defaultValues?.id || !file) return;
+
+    setIsLoading(true);
+    try {
+      // Upload file to storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${defaultValues.id}/${documentType}_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('operator-documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Create document record
+      const { data, error: dbError } = await supabase
+        .from('operator_documents')
+        .insert({
+          operator_id: defaultValues.id,
+          document_type: documentType,
+          file_name: file.name,
+          file_path: fileName,
+        })
+        .select()
+        .single();
+
+      if (dbError) throw dbError;
+
+      setDocuments([...documents, data]);
+      toast({
+        title: "Éxito",
+        description: "Documento cargado correctamente",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al cargar el documento",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (documentId: string, filePath: string) => {
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('operator-documents')
+        .remove([filePath]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('operator_documents')
+        .delete()
+        .eq('id', documentId);
+
+      if (dbError) throw dbError;
+
+      setDocuments(documents.filter(d => d.id !== documentId));
+      toast({
+        title: "Éxito",
+        description: "Documento eliminado correctamente",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al eliminar el documento",
+      });
+    }
+  };
 
   async function onSubmit(data: OperatorFormValues) {
     try {
@@ -104,10 +263,6 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
       });
     }
   }
-
-  const addVehicle = (vehicle: any) => {
-    setVehicles([...vehicles, vehicle]);
-  };
 
   return (
     <Form {...form}>
@@ -363,38 +518,87 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
               </CardFooter>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="documents" className="space-y-4 mt-4">
-            <DocumentUpload />
-          </TabsContent>
-          
-          <TabsContent value="vehicles" className="space-y-4 mt-4">
-            <VehicleForm onAddVehicle={addVehicle} />
-            
-            {vehicles.length > 0 && (
-              <Card className="mt-4">
-                <CardHeader>
-                  <CardTitle>Vehículos Registrados</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {vehicles.map((vehicle, index) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <Car className="h-5 w-5 text-muted-foreground" />
-                            <h3 className="font-medium">{vehicle.brand} {vehicle.model} ({vehicle.year})</h3>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Placa: {vehicle.plate}
-                          </div>
-                        </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Documentos del Operador</CardTitle>
+                <CardDescription>
+                  Gestiona los documentos del operador
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {documents.map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <FileText className="h-6 w-6 text-blue-500" />
+                      <div>
+                        <p className="font-medium">{doc.document_type}</p>
+                        <p className="text-sm text-muted-foreground">{doc.file_name}</p>
                       </div>
-                    ))}
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ))}
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {['INE', 'Licencia', 'Comprobante de domicilio', 'CURP'].map((docType) => (
+                    <Card key={docType} className="p-4">
+                      <div className="flex flex-col items-center space-y-2">
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        <p className="font-medium">{docType}</p>
+                        <Input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(file, docType);
+                          }}
+                          disabled={isLoading}
+                        />
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="vehicles" className="space-y-4 mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Vehículos del Operador</CardTitle>
+                <CardDescription>
+                  Lista de vehículos registrados
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {vehicles.map((vehicle) => (
+                  <div key={vehicle.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <Car className="h-6 w-6 text-blue-500" />
+                      <div>
+                        <p className="font-medium">{vehicle.brand} {vehicle.model} ({vehicle.year})</p>
+                        <p className="text-sm text-muted-foreground">Placa: {vehicle.plate}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeleteVehicle(vehicle.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </form>
