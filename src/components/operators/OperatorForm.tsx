@@ -613,6 +613,26 @@ const OperatorForm: React.FC<OperatorFormProps> = ({ defaultValues }) => {
                     </div>
                   </div>
                 ))}
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {['INE', 'Licencia', 'Comprobante de domicilio', 'CURP', 'Carta de Antecedentes', 'Examen Toxicológico'].map((docType) => (
+                    <Card key={docType} className="p-4">
+                      <div className="flex flex-col items-center space-y-2">
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        <p className="font-medium">{docType}</p>
+                        <Input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(file, docType);
+                          }}
+                          disabled={isLoading}
+                        />
+                      </div>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
