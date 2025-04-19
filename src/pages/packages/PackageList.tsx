@@ -1,9 +1,26 @@
 
 import React from 'react';
 import { Package } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import DrawableMap from '@/components/maps/DrawableMap';
+import { supabase } from '@/integrations/supabase/client';
+import type { Order } from '@/types/order';
 
 const PackageList: React.FC = () => {
+  const { data: orders } = useQuery({
+    queryKey: ['orders'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .not('lat', 'is', null)
+        .not('lng', 'is', null);
+      
+      if (error) throw error;
+      return data as Order[];
+    }
+  });
+
   const handlePolygonComplete = (coordinates: number[][]) => {
     console.log('Polígono completado:', coordinates);
     // Aquí puedes manejar las coordenadas del polígono
@@ -17,7 +34,10 @@ const PackageList: React.FC = () => {
       </div>
 
       <div className="grid gap-6">
-        <DrawableMap onPolygonComplete={handlePolygonComplete} />
+        <DrawableMap 
+          onPolygonComplete={handlePolygonComplete}
+          orders={orders} 
+        />
         
         <div className="bg-white rounded-lg border p-8 text-center">
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">

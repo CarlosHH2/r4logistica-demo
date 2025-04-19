@@ -7,18 +7,53 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Map, Trash } from 'lucide-react';
+import { Order } from '@/types/order';
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiY2FybG9zaDIiLCJhIjoiY203aWxlNHU5MXNwNjJzcTNmZGZscThqaSJ9.mt9vzXHbWRtOj6rqrpSD5g';
 
 interface DrawableMapProps {
   onPolygonComplete?: (coordinates: number[][]) => void;
+  orders?: Order[];
 }
 
-const DrawableMap: React.FC<DrawableMapProps> = ({ onPolygonComplete }) => {
+const DrawableMap: React.FC<DrawableMapProps> = ({ onPolygonComplete, orders = [] }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const draw = useRef<MapboxDraw | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
+
+  // Limpiar marcadores existentes
+  const clearMarkers = () => {
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+  };
+
+  // Agregar marcadores para las órdenes
+  const addOrderMarkers = () => {
+    if (!map.current) return;
+    
+    clearMarkers();
+
+    orders.forEach(order => {
+      if (order.lat && order.lng) {
+        const marker = new mapboxgl.Marker()
+          .setLngLat([order.lng, order.lat])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 })
+              .setHTML(
+                `<div>
+                  <p><strong>Dirección:</strong> ${order.street} ${order.number}</p>
+                  <p><strong>Código Postal:</strong> ${order.postal_code}</p>
+                </div>`
+              )
+          )
+          .addTo(map.current);
+        
+        markersRef.current.push(marker);
+      }
+    });
+  };
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -53,12 +88,22 @@ const DrawableMap: React.FC<DrawableMapProps> = ({ onPolygonComplete }) => {
       setIsDrawing(false);
     });
 
+    map.current.on('load', () => {
+      addOrderMarkers();
+    });
+
     return () => {
+      clearMarkers();
       if (map.current) {
         map.current.remove();
       }
     };
-  }, [onPolygonComplete]);
+  }, []); // Initial map setup
+
+  // Efecto para actualizar marcadores cuando cambien las órdenes
+  useEffect(() => {
+    addOrderMarkers();
+  }, [orders]);
 
   const handleStartDrawing = () => {
     if (draw.current && !isDrawing) {
