@@ -6,7 +6,7 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Polygon } from 'lucide-react';
+import { Map, Trash } from 'lucide-react';
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiY2FybG9zaDIiLCJhIjoiY203aWxlNHU5MXNwNjJzcTNmZGZscThqaSJ9.mt9vzXHbWRtOj6rqrpSD5g';
 
@@ -41,10 +41,12 @@ const DrawableMap: React.FC<DrawableMapProps> = ({ onPolygonComplete }) => {
     map.current.addControl(draw.current);
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    map.current.on('draw.create', (e) => {
-      const coordinates = e.features[0].geometry.coordinates[0];
-      onPolygonComplete?.(coordinates);
-      setIsDrawing(false);
+    map.current.on('draw.create', (e: any) => {
+      if (e.features && e.features.length > 0 && e.features[0].geometry && e.features[0].geometry.coordinates) {
+        const coordinates = e.features[0].geometry.coordinates[0];
+        onPolygonComplete?.(coordinates);
+        setIsDrawing(false);
+      }
     });
 
     map.current.on('draw.delete', () => {
@@ -82,7 +84,7 @@ const DrawableMap: React.FC<DrawableMapProps> = ({ onPolygonComplete }) => {
             variant="outline"
             className="flex items-center gap-2"
           >
-            <Polygon className="h-4 w-4" />
+            <Map className="h-4 w-4" />
             Dibujar Zona
           </Button>
           <Button
@@ -90,6 +92,7 @@ const DrawableMap: React.FC<DrawableMapProps> = ({ onPolygonComplete }) => {
             variant="outline"
             className="flex items-center gap-2"
           >
+            <Trash className="h-4 w-4" />
             Borrar
           </Button>
         </div>
