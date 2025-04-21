@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OperatorDocumentsTabProps {
   operatorId?: string;
@@ -21,7 +22,40 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
   onDocumentDelete
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [documentUrls, setDocumentUrls] = useState<Record<string, string>>({});
   const { toast } = useToast();
+
+  // Fetch signed URLs for all documents when documents array changes
+  useEffect(() => {
+    const fetchSignedUrls = async () => {
+      const urls: Record<string, string> = {};
+      
+      for (const doc of documents) {
+        try {
+          const { data, error } = await supabase.storage
+            .from('operator-documents')
+            .createSignedUrl(doc.file_path, 60 * 60); // URL válida por 1 hora
+            
+          if (error) {
+            console.error('Error creating signed URL:', error);
+            continue;
+          }
+          
+          if (data && data.signedUrl) {
+            urls[doc.id] = data.signedUrl;
+          }
+        } catch (err) {
+          console.error('Error getting signed URL for document:', err);
+        }
+      }
+      
+      setDocumentUrls(urls);
+    };
+    
+    if (documents.length > 0) {
+      fetchSignedUrls();
+    }
+  }, [documents]);
 
   const handleFileUpload = async (file: File, documentType: string) => {
     try {
@@ -87,11 +121,18 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
                             variant="outline" 
                             size="sm"
                             onClick={() => {
-                              if (doc.url) {
-                                window.open(doc.url, '_blank');
+                              if (documentUrls[doc.id]) {
+                                window.open(documentUrls[doc.id], '_blank');
+                              } else {
+                                toast({
+                                  variant: "destructive",
+                                  title: "Error",
+                                  description: "No se pudo obtener el enlace del documento. Inténtalo nuevamente.",
+                                });
                               }
                             }}
                             className="gap-2"
+                            disabled={!documentUrls[doc.id]}
                           >
                             <Eye className="h-4 w-4" />
                             Ver documento
