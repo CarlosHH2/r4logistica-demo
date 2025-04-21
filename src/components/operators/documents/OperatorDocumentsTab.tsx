@@ -63,7 +63,7 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
           {documentTypes.map((docType) => {
             const isUploaded = isDocumentUploaded(docType);
             const doc = getDocumentByType(docType);
-            const isSelected = selectedDocument === doc?.url;
+            const isSelected = selectedDocument === (doc?.url || null);
 
             return (
               <Card 
@@ -100,7 +100,7 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
                             Eliminar
                           </Button>
                         </div>
-                        {isSelected && (
+                        {isSelected && doc.url && (
                           <div className="mt-2 rounded-lg overflow-hidden border">
                             {doc.url.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/) ? (
                               <img 
