@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { FileText, Trash2 } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface OperatorDocumentsTabProps {
   operatorId?: string;
@@ -20,7 +20,7 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
   onDocumentUpload,
   onDocumentDelete
 }) => {
-  const [selectedDocument, setSelectedDocument] = useState<{ url: string; type: string } | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -40,9 +40,15 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
     }
   };
 
-  const handlePreviewDocument = (url: string, documentType: string) => {
-    setSelectedDocument({ url, type: documentType });
+  const isDocumentUploaded = (docType: string) => {
+    return documents.some(doc => doc.document_type === docType);
   };
+
+  const getDocumentByType = (docType: string) => {
+    return documents.find(doc => doc.document_type === docType);
+  };
+
+  const documentTypes = ['INE', 'Licencia', 'Comprobante de domicilio', 'CURP', 'Carta de Antecedentes', 'Examen Toxicológico'];
 
   return (
     <Card>
@@ -52,80 +58,85 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
           Gestiona los documentos del operador
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {documents.map((doc) => (
-          <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex items-center space-x-4">
-              <FileText className="h-6 w-6 text-blue-500" />
-              <div>
-                <p className="font-medium">{doc.document_type}</p>
-                <p className="text-sm text-muted-foreground">{doc.file_name}</p>
-              </div>
-            </div>
-            <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handlePreviewDocument(doc.url, doc.document_type)}
-              >
-                Previsualizar
-              </Button>
-              <Button
-                variant="destructive"
-                size="icon"
-                onClick={() => onDocumentDelete(doc.id, doc.file_path)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        ))}
+      <CardContent>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {documentTypes.map((docType) => {
+            const isUploaded = isDocumentUploaded(docType);
+            const doc = getDocumentByType(docType);
+            const isSelected = selectedDocument === doc?.url;
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {['INE', 'Licencia', 'Comprobante de domicilio', 'CURP', 'Carta de Antecedentes', 'Examen Toxicológico'].map((docType) => (
-            <Card key={docType} className="p-4">
-              <div className="flex flex-col items-center space-y-2">
-                <FileText className="h-8 w-8 text-muted-foreground" />
-                <p className="font-medium">{docType}</p>
-                <Input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileUpload(file, docType);
-                  }}
-                  disabled={isLoading}
-                />
-              </div>
-            </Card>
-          ))}
+            return (
+              <Card 
+                key={docType} 
+                className={cn(
+                  "relative overflow-hidden transition-colors",
+                  isUploaded ? "bg-green-50 border-green-200" : "bg-background"
+                )}
+              >
+                <CardContent className="p-4">
+                  <div className="flex flex-col items-center space-y-2">
+                    <FileText className={cn(
+                      "h-8 w-8",
+                      isUploaded ? "text-green-500" : "text-muted-foreground"
+                    )} />
+                    <p className="font-medium text-center">{docType}</p>
+                    
+                    {isUploaded && doc ? (
+                      <div className="w-full space-y-2">
+                        <p className="text-sm text-center text-muted-foreground">{doc.file_name}</p>
+                        <div className="flex gap-2 justify-center">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setSelectedDocument(isSelected ? null : doc.url)}
+                          >
+                            {isSelected ? "Ocultar" : "Ver"}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => onDocumentDelete(doc.id, doc.file_path)}
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
+                        {isSelected && (
+                          <div className="mt-2 rounded-lg overflow-hidden border">
+                            {doc.url.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/) ? (
+                              <img 
+                                src={doc.url} 
+                                alt={`Documento ${docType}`} 
+                                className="w-full h-auto max-h-[200px] object-contain"
+                              />
+                            ) : (
+                              <iframe 
+                                src={doc.url} 
+                                className="w-full h-[200px]"
+                                title={`Documento ${docType}`}
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(file, docType);
+                        }}
+                        disabled={isLoading}
+                        className="w-full"
+                      />
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </CardContent>
-
-      <Dialog open={!!selectedDocument} onOpenChange={() => setSelectedDocument(null)}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Previsualización de {selectedDocument?.type}</DialogTitle>
-          </DialogHeader>
-          {selectedDocument && (
-            <>
-              {selectedDocument.url.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/) ? (
-                <img 
-                  src={selectedDocument.url} 
-                  alt={`Documento ${selectedDocument.type}`} 
-                  className="max-w-full max-h-[70vh] object-contain"
-                />
-              ) : (
-                <iframe 
-                  src={selectedDocument.url} 
-                  className="w-full h-[70vh]"
-                  title={`Documento ${selectedDocument.type}`}
-                />
-              )}
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };
