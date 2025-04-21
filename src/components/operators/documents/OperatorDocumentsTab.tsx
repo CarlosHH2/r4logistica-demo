@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface OperatorDocumentsTabProps {
   operatorId?: string;
@@ -23,6 +24,8 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [documentUrls, setDocumentUrls] = useState<Record<string, string>>({});
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const { toast } = useToast();
 
   // Fetch signed URLs for all documents when documents array changes
@@ -81,91 +84,123 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
     return documents.find(doc => doc.document_type === docType);
   };
 
+  const handlePreviewDocument = (url: string) => {
+    setPreviewUrl(url);
+    setPreviewOpen(true);
+  };
+
   const documentTypes = ['INE', 'Licencia', 'Comprobante de domicilio', 'CURP', 'Carta de Antecedentes', 'Examen Toxicológico'];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Documentos del Operador</CardTitle>
-        <CardDescription>
-          Gestiona los documentos del operador
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {documentTypes.map((docType) => {
-            const isUploaded = isDocumentUploaded(docType);
-            const doc = getDocumentByType(docType);
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Documentos del Operador</CardTitle>
+          <CardDescription>
+            Gestiona los documentos del operador
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {documentTypes.map((docType) => {
+              const isUploaded = isDocumentUploaded(docType);
+              const doc = getDocumentByType(docType);
 
-            return (
-              <Card 
-                key={docType} 
-                className={cn(
-                  "relative overflow-hidden transition-colors",
-                  isUploaded ? "bg-green-50 border-green-200" : "bg-background"
-                )}
-              >
-                <CardContent className="p-4">
-                  <div className="flex flex-col items-center space-y-2">
-                    <FileText className={cn(
-                      "h-8 w-8",
-                      isUploaded ? "text-green-500" : "text-muted-foreground"
-                    )} />
-                    <p className="font-medium text-center">{docType}</p>
-                    
-                    {isUploaded && doc ? (
-                      <div className="w-full space-y-2">
-                        <p className="text-sm text-center text-muted-foreground">{doc.file_name}</p>
-                        <div className="flex gap-2 justify-center">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              if (documentUrls[doc.id]) {
-                                window.open(documentUrls[doc.id], '_blank');
-                              } else {
-                                toast({
-                                  variant: "destructive",
-                                  title: "Error",
-                                  description: "No se pudo obtener el enlace del documento. Inténtalo nuevamente.",
-                                });
-                              }
-                            }}
-                            className="gap-2"
-                            disabled={!documentUrls[doc.id]}
-                          >
-                            <Eye className="h-4 w-4" />
-                            Ver documento
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => onDocumentDelete(doc.id, doc.file_path)}
-                          >
-                            Eliminar
-                          </Button>
+              return (
+                <Card 
+                  key={docType} 
+                  className={cn(
+                    "relative overflow-hidden transition-colors",
+                    isUploaded ? "bg-green-50 border-green-200" : "bg-background"
+                  )}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex flex-col items-center space-y-2">
+                      <FileText className={cn(
+                        "h-8 w-8",
+                        isUploaded ? "text-green-500" : "text-muted-foreground"
+                      )} />
+                      <p className="font-medium text-center">{docType}</p>
+                      
+                      {isUploaded && doc ? (
+                        <div className="w-full space-y-2">
+                          <p className="text-sm text-center text-muted-foreground">{doc.file_name}</p>
+                          <div className="flex gap-2 justify-center">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                if (documentUrls[doc.id]) {
+                                  handlePreviewDocument(documentUrls[doc.id]);
+                                } else {
+                                  toast({
+                                    variant: "destructive",
+                                    title: "Error",
+                                    description: "No se pudo obtener el enlace del documento. Inténtalo nuevamente.",
+                                  });
+                                }
+                              }}
+                              className="gap-2"
+                              disabled={!documentUrls[doc.id]}
+                            >
+                              <Eye className="h-4 w-4" />
+                              Ver documento
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => onDocumentDelete(doc.id, doc.file_path)}
+                            >
+                              Eliminar
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <Input
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, docType);
-                        }}
-                        disabled={isLoading}
-                        className="w-full"
-                      />
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+                      ) : (
+                        <Input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(file, docType);
+                          }}
+                          disabled={isLoading}
+                          className="w-full"
+                        />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Vista previa del documento</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-[70vh] overflow-auto">
+            {previewUrl && (
+              previewUrl.toLowerCase().endsWith('.pdf') ? (
+                <iframe 
+                  src={`${previewUrl}#toolbar=0&navpanes=0`} 
+                  className="w-full h-full" 
+                  title="PDF Viewer"
+                />
+              ) : (
+                <img 
+                  src={previewUrl} 
+                  alt="Document preview" 
+                  className="max-w-full max-h-full object-contain mx-auto"
+                />
+              )
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
