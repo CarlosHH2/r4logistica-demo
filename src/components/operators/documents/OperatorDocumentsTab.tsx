@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { FileText, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,6 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
   onDocumentUpload,
   onDocumentDelete
 }) => {
-  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -63,7 +61,6 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
           {documentTypes.map((docType) => {
             const isUploaded = isDocumentUploaded(docType);
             const doc = getDocumentByType(docType);
-            const isSelected = selectedDocument === (doc?.url || null);
 
             return (
               <Card 
@@ -88,11 +85,15 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => setSelectedDocument(isSelected ? null : doc.url)}
+                            onClick={() => {
+                              if (doc.url) {
+                                window.open(doc.url, '_blank');
+                              }
+                            }}
                             className="gap-2"
                           >
                             <Eye className="h-4 w-4" />
-                            {isSelected ? "Ocultar documento" : "Ver documento"}
+                            Ver documento
                           </Button>
                           <Button
                             variant="destructive"
@@ -102,23 +103,6 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
                             Eliminar
                           </Button>
                         </div>
-                        {isSelected && doc.url && (
-                          <div className="mt-2 rounded-lg overflow-hidden border">
-                            {doc.url.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/) ? (
-                              <img 
-                                src={doc.url} 
-                                alt={`Documento ${docType}`} 
-                                className="w-full h-auto max-h-[200px] object-contain"
-                              />
-                            ) : (
-                              <iframe 
-                                src={doc.url} 
-                                className="w-full h-[200px]"
-                                title={`Documento ${docType}`}
-                              />
-                            )}
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <Input
