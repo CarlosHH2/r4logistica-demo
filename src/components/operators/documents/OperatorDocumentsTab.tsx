@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { FileText } from 'lucide-react';
+import { FileText, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,8 +89,10 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
                             variant="outline" 
                             size="sm"
                             onClick={() => setSelectedDocument(isSelected ? null : doc.url)}
+                            className="gap-2"
                           >
-                            {isSelected ? "Ocultar" : "Ver"}
+                            <Eye className="h-4 w-4" />
+                            {isSelected ? "Ocultar documento" : "Ver documento"}
                           </Button>
                           <Button
                             variant="destructive"
