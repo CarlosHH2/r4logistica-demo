@@ -85,7 +85,11 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
     return documents.find(doc => doc.document_type === docType);
   };
 
-  const handlePreviewDocument = (url: string) => {
+  const handlePreviewDocument = (e: React.MouseEvent, url: string) => {
+    // Prevenir comportamiento por defecto para evitar envío de formulario
+    e.preventDefault();
+    e.stopPropagation();
+    
     setPreviewUrl(url);
     setPreviewOpen(true);
   };
@@ -130,9 +134,9 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => {
+                              onClick={(e) => {
                                 if (documentUrls[doc.id]) {
-                                  handlePreviewDocument(documentUrls[doc.id]);
+                                  handlePreviewDocument(e, documentUrls[doc.id]);
                                 } else {
                                   toast({
                                     variant: "destructive",
@@ -143,6 +147,7 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
                               }}
                               className="gap-2"
                               disabled={!documentUrls[doc.id]}
+                              type="button" // Importante: especificar que es un botón de tipo button para evitar el envío del formulario
                             >
                               <Eye className="h-4 w-4" />
                               Ver documento
@@ -150,7 +155,11 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
                             <Button
                               variant="destructive"
                               size="sm"
-                              onClick={() => onDocumentDelete(doc.id, doc.file_path)}
+                              onClick={(e) => {
+                                e.preventDefault(); // Prevenir envío de formulario
+                                onDocumentDelete(doc.id, doc.file_path);
+                              }}
+                              type="button" // Importante: especificar que es un botón de tipo button
                             >
                               Eliminar
                             </Button>
