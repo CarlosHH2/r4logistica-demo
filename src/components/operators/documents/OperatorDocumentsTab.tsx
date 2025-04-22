@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 interface OperatorDocumentsTabProps {
   operatorId?: string;
@@ -176,25 +177,28 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
         </CardContent>
       </Card>
 
+      {/* Document Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-2">
             <DialogTitle>Vista previa del documento</DialogTitle>
           </DialogHeader>
-          <div className="relative w-full h-[70vh] overflow-auto">
+          <div className="flex-1 overflow-auto p-6 pt-0">
             {previewUrl && (
               previewUrl.toLowerCase().endsWith('.pdf') ? (
                 <iframe 
-                  src={`${previewUrl}#toolbar=0&navpanes=0`} 
-                  className="w-full h-full" 
+                  src={`${previewUrl}#toolbar=1&navpanes=1`} 
+                  className="w-full h-full border-0 min-h-[600px]" 
                   title="PDF Viewer"
                 />
               ) : (
-                <img 
-                  src={previewUrl} 
-                  alt="Document preview" 
-                  className="max-w-full max-h-full object-contain mx-auto"
-                />
+                <div className="w-full h-full flex items-center justify-center">
+                  <img 
+                    src={previewUrl} 
+                    alt="Document preview" 
+                    className="max-w-full max-h-[calc(90vh-120px)] object-contain"
+                  />
+                </div>
               )
             )}
           </div>
