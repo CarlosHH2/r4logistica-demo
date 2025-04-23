@@ -17,7 +17,7 @@ const RouteList = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)} className="mb-6">
-        <TabsList>
+        <TabsList className="mb-4">
           <TabsTrigger value="todas">Todas</TabsTrigger>
           <TabsTrigger value="active">En Progreso</TabsTrigger>
           <TabsTrigger value="pending">Pendientes</TabsTrigger>

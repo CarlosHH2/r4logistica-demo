@@ -47,12 +47,12 @@ export const RouteTabContent = ({ activeTab }: RouteTabContentProps) => {
   });
 
   if (isLoading) {
-    return <div>Cargando rutas...</div>;
+    return <div className="w-full text-center py-4">Cargando rutas...</div>;
   }
 
   if (!routes?.length) {
     return (
-      <div className="col-span-2 text-center py-8 text-muted-foreground">
+      <div className="w-full text-center py-8 text-muted-foreground">
         No hay rutas para mostrar
       </div>
     );
