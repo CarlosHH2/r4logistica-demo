@@ -6,6 +6,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { CreateRouteDialog } from '@/components/routes/CreateRouteDialog';
 import { RouteCard } from '@/components/routes/RouteCard';
 
+// Define the allowed status types
+type RouteStatusType = 'pending' | 'active' | 'completed';
+
+// Helper function to validate status
+const validateStatus = (status: string): RouteStatusType => {
+  if (status === 'pending' || status === 'active' || status === 'completed') {
+    return status;
+  }
+  return 'pending'; // Default fallback if invalid status
+};
+
 const RouteList = () => {
   const { data: routes, isLoading } = useQuery({
     queryKey: ['routes'],
@@ -55,7 +66,13 @@ const RouteList = () => {
           </div>
         ) : (
           routes.map((route) => (
-            <RouteCard key={route.id} route={route} />
+            <RouteCard 
+              key={route.id} 
+              route={{
+                ...route,
+                status: validateStatus(route.status)
+              }} 
+            />
           ))
         )}
       </div>

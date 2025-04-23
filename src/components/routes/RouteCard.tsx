@@ -2,13 +2,13 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Users } from 'lucide-react';
-import { RouteStatusBadge } from './RouteStatusBadge';
+import { RouteStatusBadge, StatusType } from './RouteStatusBadge';
 
 interface RouteCardProps {
   route: {
     id: string;
     alias: string;
-    status: 'pending' | 'active' | 'completed';
+    status: StatusType;
     route_orders: { order_id: string; sequence_number: number; }[];
     operators?: {
       name: string;

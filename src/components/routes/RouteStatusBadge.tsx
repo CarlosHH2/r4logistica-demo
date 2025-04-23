@@ -1,7 +1,7 @@
 
 import { Badge } from '@/components/ui/badge';
 
-type StatusType = 'pending' | 'active' | 'completed';
+export type StatusType = 'pending' | 'active' | 'completed';
 
 interface RouteStatusBadgeProps {
   status: StatusType;
