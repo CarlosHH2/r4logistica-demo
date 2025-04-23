@@ -157,6 +157,7 @@ export type Database = {
           number: string
           postal_code: string
           reference: string | null
+          route_assigned: boolean | null
           street: string
           sub_administrative_area: string
           updated_at: string
@@ -176,6 +177,7 @@ export type Database = {
           number: string
           postal_code: string
           reference?: string | null
+          route_assigned?: boolean | null
           street: string
           sub_administrative_area: string
           updated_at?: string
@@ -195,6 +197,7 @@ export type Database = {
           number?: string
           postal_code?: string
           reference?: string | null
+          route_assigned?: boolean | null
           street?: string
           sub_administrative_area?: string
           updated_at?: string
@@ -228,6 +231,77 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      route_orders: {
+        Row: {
+          created_at: string
+          order_id: string
+          route_id: string
+          sequence_number: number
+        }
+        Insert: {
+          created_at?: string
+          order_id: string
+          route_id: string
+          sequence_number: number
+        }
+        Update: {
+          created_at?: string
+          order_id?: string
+          route_id?: string
+          sequence_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_orders_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routes: {
+        Row: {
+          alias: string
+          created_at: string
+          id: string
+          operator_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          alias: string
+          created_at?: string
+          id?: string
+          operator_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          id?: string
+          operator_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routes_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
