@@ -1,13 +1,10 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { CalendarClock, MapPin, Users } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CreateRouteDialog } from '@/components/routes/CreateRouteDialog';
+import { RouteCard } from '@/components/routes/RouteCard';
 
 const RouteList = () => {
   const { data: routes, isLoading } = useQuery({
@@ -32,22 +29,6 @@ const RouteList = () => {
       return data;
     },
   });
-
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string, variant: 'default' | 'outline' | 'secondary' }> = {
-      pending: { label: 'Pendiente', variant: 'secondary' },
-      active: { label: 'En Progreso', variant: 'default' },
-      completed: { label: 'Completada', variant: 'outline' },
-    };
-    
-    const statusInfo = statusMap[status] || { label: status, variant: 'default' };
-    
-    return (
-      <Badge variant={statusInfo.variant}>
-        {statusInfo.label}
-      </Badge>
-    );
-  };
 
   return (
     <div className="animate-fade-in">
@@ -74,41 +55,7 @@ const RouteList = () => {
           </div>
         ) : (
           routes.map((route) => (
-            <Card key={route.id} className="overflow-hidden">
-              <div className="p-4 border-b flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">{route.alias}</h3>
-                  <p className="text-sm text-muted-foreground">{route.id.slice(0, 8)}</p>
-                </div>
-                {getStatusBadge(route.status)}
-              </div>
-              <CardContent className="p-4">
-                <div className="mb-4">
-                  <div className="flex justify-between mt-1 text-sm text-muted-foreground">
-                    <span>{route.route_orders.length} órdenes</span>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  {route.operators && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Operador:</span>
-                      <span className="font-medium">
-                        {route.operators.name} {route.operators.lastname}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="mt-4 pt-4 border-t flex justify-end gap-2">
-                  <Button variant="outline" size="sm">Ver detalle</Button>
-                  {!route.operator_id && (
-                    <Button size="sm">Asignar operador</Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <RouteCard key={route.id} route={route} />
           ))
         )}
       </div>
