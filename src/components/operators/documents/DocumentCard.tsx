@@ -68,8 +68,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
                     onDelete(doc.id, doc.file_path);
                   }}
                   type="button"
