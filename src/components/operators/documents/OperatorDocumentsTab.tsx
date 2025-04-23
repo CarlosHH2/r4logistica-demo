@@ -113,4 +113,3 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
 };
 
 export default OperatorDocumentsTab;
-

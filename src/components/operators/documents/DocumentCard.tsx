@@ -13,7 +13,7 @@ interface DocumentCardProps {
   documentUrl?: string;
   isLoading: boolean;
   onPreview: (e: React.MouseEvent, url: string, fileName: string) => void;
-  onDelete: (e: React.MouseEvent, docId: string, filePath: string) => void;
+  onDelete: (documentId: string, filePath: string) => Promise<void>;
   onFileUpload: (file: File, documentType: string) => void;
   onError: () => void;
 }
@@ -70,7 +70,7 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
                   size="sm"
                   onClick={(e) => {
                     e.preventDefault();
-                    onDelete(e, doc.id, doc.file_path);
+                    onDelete(doc.id, doc.file_path);
                   }}
                   type="button"
                 >
@@ -97,4 +97,3 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
 };
 
 export default DocumentCard;
-
