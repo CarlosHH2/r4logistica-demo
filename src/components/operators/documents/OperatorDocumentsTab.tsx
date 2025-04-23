@@ -8,7 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 interface OperatorDocumentsTabProps {
   operatorId?: string;
@@ -27,6 +26,7 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
   const [documentUrls, setDocumentUrls] = useState<Record<string, string>>({});
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewType, setPreviewType] = useState<'pdf' | 'image'>('image');
   const { toast } = useToast();
 
   // Fetch signed URLs for all documents when documents array changes
@@ -85,12 +85,15 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
     return documents.find(doc => doc.document_type === docType);
   };
 
-  const handlePreviewDocument = (e: React.MouseEvent, url: string) => {
+  const handlePreviewDocument = (e: React.MouseEvent, url: string, fileName: string) => {
     // Prevenir comportamiento por defecto para evitar envío de formulario
     e.preventDefault();
     e.stopPropagation();
     
     setPreviewUrl(url);
+    // Determine document type based on file extension
+    const fileType = fileName.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image';
+    setPreviewType(fileType);
     setPreviewOpen(true);
   };
 
@@ -136,7 +139,7 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
                               size="sm"
                               onClick={(e) => {
                                 if (documentUrls[doc.id]) {
-                                  handlePreviewDocument(e, documentUrls[doc.id]);
+                                  handlePreviewDocument(e, documentUrls[doc.id], doc.file_name);
                                 } else {
                                   toast({
                                     variant: "destructive",
@@ -193,23 +196,29 @@ const OperatorDocumentsTab: React.FC<OperatorDocumentsTabProps> = ({
             <DialogTitle>Vista previa del documento</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto p-6 pt-0">
-            {previewUrl && (
-              previewUrl.toLowerCase().endsWith('.pdf') ? (
-                <iframe 
-                  src={`${previewUrl}#toolbar=1&navpanes=1`} 
-                  className="w-full h-full border-0 min-h-[600px]" 
-                  title="PDF Viewer"
+            {previewUrl && previewType === 'pdf' ? (
+              <object 
+                data={previewUrl} 
+                type="application/pdf" 
+                width="100%" 
+                height="100%" 
+                className="min-h-[600px]"
+              >
+                <p>Tu navegador no puede mostrar el PDF. 
+                   <a href={previewUrl} target="_blank" rel="noopener noreferrer">
+                     Haz clic aquí para descargarlo
+                   </a>
+                </p>
+              </object>
+            ) : previewUrl && previewType === 'image' ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <img 
+                  src={previewUrl} 
+                  alt="Document preview" 
+                  className="max-w-full max-h-[calc(90vh-120px)] object-contain"
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <img 
-                    src={previewUrl} 
-                    alt="Document preview" 
-                    className="max-w-full max-h-[calc(90vh-120px)] object-contain"
-                  />
-                </div>
-              )
-            )}
+              </div>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
