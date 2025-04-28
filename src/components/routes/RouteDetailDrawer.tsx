@@ -16,11 +16,17 @@ interface RouteDetailDrawerProps {
   onClose: () => void;
 }
 
+// Define a clear interface for our sorted orders to prevent type recursion
+interface OrderWithSequence extends Order {
+  sequence_number: number;
+}
+
 export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawerProps) => {
   const { data: orders, isLoading, error } = useQuery({
     queryKey: ['route-orders', routeId],
     queryFn: async () => {
       try {
+        // Fetch route orders
         const { data: routeOrders, error: routeOrdersError } = await supabase
           .from('route_orders')
           .select('order_id, sequence_number')
@@ -32,8 +38,10 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
         // If no orders in route, return empty array
         if (!routeOrders?.length) return [];
         
-        // Modified query to use 'id' instead of 'order_id'
+        // Get all order IDs
         const orderIds = routeOrders.map(ro => ro.order_id);
+        
+        // Fetch order details
         const { data: orders, error: ordersError } = await supabase
           .from('orders')
           .select('*')
@@ -43,13 +51,22 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
 
         if (!orders?.length) return [];
 
-        // Sort orders according to sequence_number
-        const sortedOrders = orders.map(order => ({
-          ...order,
-          sequence_number: routeOrders.find(ro => ro.order_id === order.id)?.sequence_number || 0
-        })).sort((a, b) => (a.sequence_number || 0) - (b.sequence_number || 0));
+        // Create a map for quick lookups of sequence numbers
+        const sequenceMap = new Map<string, number>();
+        routeOrders.forEach(ro => {
+          sequenceMap.set(ro.order_id, ro.sequence_number);
+        });
 
-        return sortedOrders as (Order & { sequence_number: number })[];
+        // Create orders with sequence numbers and sort them
+        const sortedOrders: OrderWithSequence[] = orders.map(order => ({
+          ...order,
+          sequence_number: sequenceMap.get(order.id) || 0
+        }));
+        
+        // Sort by sequence number
+        sortedOrders.sort((a, b) => a.sequence_number - b.sequence_number);
+
+        return sortedOrders;
       } catch (err) {
         console.error('Error fetching route orders:', err);
         return [];
