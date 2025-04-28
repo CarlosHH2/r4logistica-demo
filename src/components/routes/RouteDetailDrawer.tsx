@@ -17,34 +17,41 @@ interface RouteDetailDrawerProps {
 }
 
 export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawerProps) => {
-  const { data: orders, isLoading } = useQuery({
+  const { data: orders, isLoading, error } = useQuery({
     queryKey: ['route-orders', routeId],
     queryFn: async () => {
-      const { data: routeOrders, error: routeOrdersError } = await supabase
-        .from('route_orders')
-        .select('order_id, sequence_number')
-        .eq('route_id', routeId)
-        .order('sequence_number');
+      try {
+        const { data: routeOrders, error: routeOrdersError } = await supabase
+          .from('route_orders')
+          .select('order_id, sequence_number')
+          .eq('route_id', routeId)
+          .order('sequence_number');
 
-      if (routeOrdersError) throw routeOrdersError;
+        if (routeOrdersError) throw routeOrdersError;
 
-      // Fetch full order details for each order in the route
-      if (!routeOrders?.length) return [];
-      
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select('*')
-        .in('id', routeOrders?.map(ro => ro.order_id) || []);
+        // If no orders in route, return empty array
+        if (!routeOrders?.length) return [];
+        
+        const { data: orders, error: ordersError } = await supabase
+          .from('orders')
+          .select('*')
+          .in('order_id', routeOrders.map(ro => ro.order_id) || []);
 
-      if (ordersError) throw ordersError;
+        if (ordersError) throw ordersError;
 
-      // Sort orders according to sequence_number
-      const sortedOrders = orders?.map(order => ({
-        ...order,
-        sequence_number: routeOrders?.find(ro => ro.order_id === order.id)?.sequence_number
-      })).sort((a, b) => (a.sequence_number || 0) - (b.sequence_number || 0));
+        if (!orders?.length) return [];
 
-      return sortedOrders as (Order & { sequence_number: number })[];
+        // Sort orders according to sequence_number
+        const sortedOrders = orders.map(order => ({
+          ...order,
+          sequence_number: routeOrders.find(ro => ro.order_id === order.id)?.sequence_number || 0
+        })).sort((a, b) => (a.sequence_number || 0) - (b.sequence_number || 0));
+
+        return sortedOrders as (Order & { sequence_number: number })[];
+      } catch (err) {
+        console.error('Error fetching route orders:', err);
+        return [];
+      }
     },
     enabled: isOpen && !!routeId,
   });
@@ -56,7 +63,11 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
           <DrawerTitle>Detalle de la Ruta</DrawerTitle>
         </DrawerHeader>
         <div className="p-4">
-          {isLoading ? (
+          {error ? (
+            <div className="text-center py-4 text-red-500">
+              Error al cargar las órdenes. Por favor, intenta de nuevo.
+            </div>
+          ) : isLoading ? (
             <div className="text-center py-4">Cargando órdenes...</div>
           ) : !orders?.length ? (
             <div className="text-center py-4 text-muted-foreground">
@@ -64,7 +75,7 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
             </div>
           ) : (
             <div className="space-y-4">
-              {orders.map((order, index) => (
+              {orders.map((order) => (
                 <div
                   key={order.id}
                   className="border rounded-lg p-4"

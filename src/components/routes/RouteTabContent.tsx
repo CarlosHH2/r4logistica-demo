@@ -18,33 +18,42 @@ const validateStatus = (status: string): RouteStatusType => {
 };
 
 export const RouteTabContent = ({ activeTab }: RouteTabContentProps) => {
-  const { data: routes, isLoading } = useQuery({
+  const { data: routes, isLoading, error } = useQuery({
     queryKey: ['routes', activeTab],
     queryFn: async () => {
-      const query = supabase
-        .from('routes')
-        .select(`
-          *,
-          route_orders(
-            order_id,
-            sequence_number
-          ),
-          operators:operator_id(
-            name,
-            lastname
-          )
-        `)
-        .order('created_at', { ascending: false });
+      try {
+        const query = supabase
+          .from('routes')
+          .select(`
+            *,
+            route_orders(
+              order_id,
+              sequence_number
+            ),
+            operators:operator_id(
+              name,
+              lastname
+            )
+          `)
+          .order('created_at', { ascending: false });
 
-      if (activeTab !== 'todas') {
-        query.eq('status', activeTab);
+        if (activeTab !== 'todas') {
+          query.eq('status', activeTab);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching routes:', error);
+        return [];
       }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
     },
   });
+
+  if (error) {
+    return <div className="w-full text-center py-4 text-red-500">Error loading routes. Please try again.</div>;
+  }
 
   if (isLoading) {
     return <div className="w-full text-center py-4">Cargando rutas...</div>;
@@ -65,6 +74,7 @@ export const RouteTabContent = ({ activeTab }: RouteTabContentProps) => {
           key={route.id} 
           route={{
             ...route,
+            route_orders: route.route_orders || [],
             status: validateStatus(route.status)
           }} 
         />

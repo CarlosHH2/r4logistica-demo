@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Users } from 'lucide-react';
@@ -22,9 +23,12 @@ interface RouteCardProps {
 export const RouteCard = ({ route }: RouteCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
+  // Ensure route_orders is always an array even if undefined
+  const orderCount = route.route_orders?.length || 0;
+
   return (
     <>
-      <Card key={route.id} className="overflow-hidden">
+      <Card className="overflow-hidden">
         <div className="p-4 border-b flex items-center justify-between">
           <div>
             <h3 className="font-medium">{route.alias}</h3>
@@ -35,7 +39,7 @@ export const RouteCard = ({ route }: RouteCardProps) => {
         <CardContent className="p-4">
           <div className="mb-4">
             <div className="flex justify-between mt-1 text-sm text-muted-foreground">
-              <span>{route.route_orders.length} órdenes</span>
+              <span>{orderCount} órdenes</span>
             </div>
           </div>
           
