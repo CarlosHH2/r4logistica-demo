@@ -24,8 +24,17 @@ const RouteList = () => {
           <TabsTrigger value="completed">Completadas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeTab}>
-          <RouteTabContent activeTab={activeTab} />
+        <TabsContent value="todas">
+          <RouteTabContent activeTab="todas" />
+        </TabsContent>
+        <TabsContent value="active">
+          <RouteTabContent activeTab="active" />
+        </TabsContent>
+        <TabsContent value="pending">
+          <RouteTabContent activeTab="pending" />
+        </TabsContent>
+        <TabsContent value="completed">
+          <RouteTabContent activeTab="completed" />
         </TabsContent>
       </Tabs>
     </div>

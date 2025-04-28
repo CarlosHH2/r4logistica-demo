@@ -29,6 +29,8 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
       if (routeOrdersError) throw routeOrdersError;
 
       // Fetch full order details for each order in the route
+      if (!routeOrders?.length) return [];
+      
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('*')
