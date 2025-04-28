@@ -10,7 +10,7 @@ const RouteList = () => {
   const [activeTab, setActiveTab] = useState<TabValue>('todas');
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in bg-gray-50 p-4 rounded-lg shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-primary">Rutas</h1>
         <CreateRouteDialog />
