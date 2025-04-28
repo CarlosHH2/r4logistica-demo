@@ -16,7 +16,7 @@ interface RouteDetailDrawerProps {
   onClose: () => void;
 }
 
-// Define a clear interface for our sorted orders to prevent type recursion
+// Explicitly defined interface for route orders with sequence numbers
 interface OrderWithSequence extends Order {
   sequence_number: number;
 }
@@ -64,9 +64,7 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
         }));
         
         // Sort by sequence number
-        sortedOrders.sort((a, b) => a.sequence_number - b.sequence_number);
-
-        return sortedOrders;
+        return sortedOrders.sort((a, b) => a.sequence_number - b.sequence_number);
       } catch (err) {
         console.error('Error fetching route orders:', err);
         return [];

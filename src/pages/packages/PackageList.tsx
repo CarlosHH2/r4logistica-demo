@@ -7,17 +7,22 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Order } from '@/types/order';
 
 const PackageList: React.FC = () => {
-  const { data: orders } = useQuery({
+  const { data: orders, isLoading } = useQuery({
     queryKey: ['orders'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .not('lat', 'is', null)
-        .not('lng', 'is', null);
-      
-      if (error) throw error;
-      return data as Order[];
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .not('lat', 'is', null)
+          .not('lng', 'is', null);
+        
+        if (error) throw error;
+        return data as Order[];
+      } catch (err) {
+        console.error('Error fetching orders:', err);
+        return [];
+      }
     }
   });
 
@@ -36,7 +41,7 @@ const PackageList: React.FC = () => {
       <div className="grid gap-6">
         <DrawableMap 
           onPolygonComplete={handlePolygonComplete}
-          orders={orders} 
+          orders={orders || []} 
         />
         
         <div className="bg-white rounded-lg border p-8 text-center">
