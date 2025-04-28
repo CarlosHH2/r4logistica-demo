@@ -32,10 +32,12 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
         // If no orders in route, return empty array
         if (!routeOrders?.length) return [];
         
+        // Modified query to use 'id' instead of 'order_id'
+        const orderIds = routeOrders.map(ro => ro.order_id);
         const { data: orders, error: ordersError } = await supabase
           .from('orders')
           .select('*')
-          .in('order_id', routeOrders.map(ro => ro.order_id) || []);
+          .in('id', orderIds);
 
         if (ordersError) throw ordersError;
 
