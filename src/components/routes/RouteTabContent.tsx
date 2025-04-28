@@ -2,12 +2,26 @@
 import { RouteCard } from '@/components/routes/RouteCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 type RouteStatusType = 'pending' | 'active' | 'completed';
 type TabValue = 'todas' | RouteStatusType;
 
 interface RouteTabContentProps {
   activeTab: TabValue;
+}
+
+interface RouteData {
+  id: string;
+  alias: string;
+  status: string;
+  route_orders: { order_id: string; sequence_number: number; }[] | null;
+  operators?: {
+    name: string;
+    lastname: string;
+  } | null;
+  operator_id?: string | null;
+  created_at: string;
 }
 
 const validateStatus = (status: string): RouteStatusType => {
@@ -42,8 +56,12 @@ export const RouteTabContent = ({ activeTab }: RouteTabContentProps) => {
         }
 
         const { data, error } = await query;
-        if (error) throw error;
-        return data || [];
+        if (error) {
+          toast.error('Error al cargar las rutas');
+          throw error;
+        }
+        
+        return (data || []) as RouteData[];
       } catch (error) {
         console.error('Error fetching routes:', error);
         return [];
@@ -52,7 +70,7 @@ export const RouteTabContent = ({ activeTab }: RouteTabContentProps) => {
   });
 
   if (error) {
-    return <div className="w-full text-center py-4 text-red-500">Error loading routes. Please try again.</div>;
+    return <div className="w-full text-center py-4 text-red-500">Error al cargar las rutas. Por favor, intenta de nuevo.</div>;
   }
 
   if (isLoading) {

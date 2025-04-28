@@ -16,15 +16,16 @@ interface RouteDetailDrawerProps {
   onClose: () => void;
 }
 
-// Explicitly defined interface for route orders with sequence numbers
+// Enhanced type for route orders with sequence numbers
 interface OrderWithSequence extends Order {
   sequence_number: number;
 }
 
 export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawerProps) => {
+  // Enhanced query with better error handling and types
   const { data: orders, isLoading, error } = useQuery({
     queryKey: ['route-orders', routeId],
-    queryFn: async () => {
+    queryFn: async (): Promise<OrderWithSequence[]> => {
       try {
         // Fetch route orders
         const { data: routeOrders, error: routeOrdersError } = await supabase
@@ -33,10 +34,15 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
           .eq('route_id', routeId)
           .order('sequence_number');
 
-        if (routeOrdersError) throw routeOrdersError;
+        if (routeOrdersError) {
+          console.error('Error fetching route orders:', routeOrdersError);
+          return [];
+        }
 
         // If no orders in route, return empty array
-        if (!routeOrders?.length) return [];
+        if (!routeOrders || routeOrders.length === 0) {
+          return [];
+        }
         
         // Get all order IDs
         const orderIds = routeOrders.map(ro => ro.order_id);
@@ -47,26 +53,33 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
           .select('*')
           .in('id', orderIds);
 
-        if (ordersError) throw ordersError;
+        if (ordersError) {
+          console.error('Error fetching orders:', ordersError);
+          return [];
+        }
 
-        if (!orders?.length) return [];
+        if (!orders || orders.length === 0) {
+          return [];
+        }
 
         // Create a map for quick lookups of sequence numbers
         const sequenceMap = new Map<string, number>();
         routeOrders.forEach(ro => {
-          sequenceMap.set(ro.order_id, ro.sequence_number);
+          if (ro && ro.order_id) {
+            sequenceMap.set(ro.order_id, ro.sequence_number);
+          }
         });
 
         // Create orders with sequence numbers and sort them
-        const sortedOrders: OrderWithSequence[] = orders.map(order => ({
+        const orderWithSequence: OrderWithSequence[] = orders.map(order => ({
           ...order,
           sequence_number: sequenceMap.get(order.id) || 0
         }));
         
-        // Sort by sequence number
-        return sortedOrders.sort((a, b) => a.sequence_number - b.sequence_number);
+        // Return sorted orders by sequence number
+        return orderWithSequence.sort((a, b) => a.sequence_number - b.sequence_number);
       } catch (err) {
-        console.error('Error fetching route orders:', err);
+        console.error('Error in route orders query:', err);
         return [];
       }
     },
@@ -86,7 +99,7 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
             </div>
           ) : isLoading ? (
             <div className="text-center py-4">Cargando órdenes...</div>
-          ) : !orders?.length ? (
+          ) : !orders || orders.length === 0 ? (
             <div className="text-center py-4 text-muted-foreground">
               No hay órdenes asignadas a esta ruta
             </div>

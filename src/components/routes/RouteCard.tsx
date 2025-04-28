@@ -11,7 +11,7 @@ interface RouteCardProps {
     id: string;
     alias: string;
     status: StatusType;
-    route_orders: { order_id: string; sequence_number: number; }[];
+    route_orders: Array<{ order_id: string; sequence_number: number; }>;
     operators?: {
       name: string;
       lastname: string;
@@ -22,9 +22,12 @@ interface RouteCardProps {
 
 export const RouteCard = ({ route }: RouteCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-
-  // Ensure route_orders is always an array even if undefined
-  const orderCount = route.route_orders?.length || 0;
+  
+  // Ensure route_orders is always an array even if undefined or null
+  const orderCount = Array.isArray(route.route_orders) ? route.route_orders.length : 0;
+  
+  // Generate a safe operator display name
+  const operatorName = route.operators ? `${route.operators.name} ${route.operators.lastname}` : 'No asignado';
 
   return (
     <>
@@ -44,15 +47,13 @@ export const RouteCard = ({ route }: RouteCardProps) => {
           </div>
           
           <div className="space-y-2">
-            {route.operators && (
-              <div className="flex items-center gap-2 text-sm">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Operador:</span>
-                <span className="font-medium">
-                  {route.operators.name} {route.operators.lastname}
-                </span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 text-sm">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Operador:</span>
+              <span className="font-medium">
+                {operatorName}
+              </span>
+            </div>
           </div>
           
           <div className="mt-4 pt-4 border-t flex justify-end gap-2">

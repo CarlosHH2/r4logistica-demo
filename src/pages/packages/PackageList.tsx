@@ -5,10 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import DrawableMap from '@/components/maps/DrawableMap';
 import { supabase } from '@/integrations/supabase/client';
 import type { Order } from '@/types/order';
+import { toast } from 'sonner';
 
 const PackageList: React.FC = () => {
-  const { data: orders, isLoading } = useQuery({
-    queryKey: ['orders'],
+  // Enhanced query with better error handling
+  const { data: orders, isLoading, error } = useQuery({
+    queryKey: ['package-orders'],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
@@ -17,10 +19,15 @@ const PackageList: React.FC = () => {
           .not('lat', 'is', null)
           .not('lng', 'is', null);
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching orders with coordinates:', error);
+          throw error;
+        }
+        
         return data as Order[];
       } catch (err) {
-        console.error('Error fetching orders:', err);
+        console.error('Error in package orders query:', err);
+        toast.error('Error al cargar los paquetes. Por favor, intenta de nuevo.');
         return [];
       }
     }
@@ -28,9 +35,13 @@ const PackageList: React.FC = () => {
 
   const handlePolygonComplete = (coordinates: number[][]) => {
     console.log('Polígono completado:', coordinates);
+    toast.success('Polígono creado correctamente');
     // Aquí puedes manejar las coordenadas del polígono
     // Por ejemplo, guardarlas en una base de datos
   };
+
+  // Safe access to orders with fallback to empty array
+  const safeOrders = orders || [];
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -38,10 +49,16 @@ const PackageList: React.FC = () => {
         <h1 className="text-2xl font-bold">Paquetes</h1>
       </div>
 
+      {error && (
+        <div className="bg-red-50 p-4 rounded-md border border-red-200 text-red-700 mb-6">
+          Error al cargar los paquetes. Por favor, intenta de nuevo.
+        </div>
+      )}
+
       <div className="grid gap-6">
         <DrawableMap 
           onPolygonComplete={handlePolygonComplete}
-          orders={orders || []} 
+          orders={safeOrders} 
         />
         
         <div className="bg-white rounded-lg border p-8 text-center">
