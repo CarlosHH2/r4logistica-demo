@@ -58,6 +58,7 @@ export const RouteTabContent = ({ activeTab }: RouteTabContentProps) => {
         const { data, error } = await query;
         
         if (error) {
+          console.error('Error al cargar las rutas:', error);
           toast.error('Error al cargar las rutas');
           throw error;
         }

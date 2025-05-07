@@ -35,13 +35,13 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
           .eq('route_id', routeId)
           .order('sequence_number');
 
-        if (routeOrdersError || !routeOrders) {
+        if (routeOrdersError) {
           console.error('Error fetching route orders:', routeOrdersError);
           return [];
         }
 
         // If no orders in route, return empty array
-        if (routeOrders.length === 0) {
+        if (!routeOrders || routeOrders.length === 0) {
           return [];
         }
         

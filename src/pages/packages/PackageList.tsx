@@ -25,7 +25,7 @@ const PackageList: React.FC = () => {
           throw error;
         }
         
-        return data as Order[];
+        return (data || []) as Order[];
       } catch (err) {
         console.error('Error in package orders query:', err);
         toast.error('Error al cargar los paquetes. Por favor, intenta de nuevo.');
