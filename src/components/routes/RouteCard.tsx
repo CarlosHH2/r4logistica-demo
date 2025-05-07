@@ -23,11 +23,14 @@ interface RouteCardProps {
 export const RouteCard = ({ route }: RouteCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   
-  // Ensure route_orders is always an array even if undefined or null
-  const orderCount = Array.isArray(route.route_orders) ? route.route_orders.length : 0;
+  // Safety check: ensure route_orders is always an array
+  const routeOrders = Array.isArray(route.route_orders) ? route.route_orders : [];
+  const orderCount = routeOrders.length;
   
   // Generate a safe operator display name
-  const operatorName = route.operators ? `${route.operators.name} ${route.operators.lastname}` : 'No asignado';
+  const operatorName = route.operators 
+    ? `${route.operators.name} ${route.operators.lastname}` 
+    : 'No asignado';
 
   return (
     <>

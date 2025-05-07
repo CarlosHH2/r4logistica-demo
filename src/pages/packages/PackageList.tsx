@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 const PackageList: React.FC = () => {
   // Enhanced query with better error handling
-  const { data: orders, isLoading, error } = useQuery({
+  const { data: orders = [], isLoading, error } = useQuery({
     queryKey: ['package-orders'],
     queryFn: async () => {
       try {
@@ -21,6 +21,7 @@ const PackageList: React.FC = () => {
         
         if (error) {
           console.error('Error fetching orders with coordinates:', error);
+          toast.error('Error al cargar los paquetes');
           throw error;
         }
         
@@ -56,10 +57,12 @@ const PackageList: React.FC = () => {
       )}
 
       <div className="grid gap-6">
-        <DrawableMap 
-          onPolygonComplete={handlePolygonComplete}
-          orders={safeOrders} 
-        />
+        {!isLoading && (
+          <DrawableMap 
+            onPolygonComplete={handlePolygonComplete}
+            orders={safeOrders} 
+          />
+        )}
         
         <div className="bg-white rounded-lg border p-8 text-center">
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">

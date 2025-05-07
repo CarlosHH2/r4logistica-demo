@@ -22,10 +22,11 @@ interface OrderWithSequence extends Order {
 }
 
 export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawerProps) => {
-  // Enhanced query with better error handling and types
   const { data: orders, isLoading, error } = useQuery({
     queryKey: ['route-orders', routeId],
     queryFn: async (): Promise<OrderWithSequence[]> => {
+      if (!routeId) return [];
+      
       try {
         // Fetch route orders
         const { data: routeOrders, error: routeOrdersError } = await supabase
@@ -34,13 +35,13 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
           .eq('route_id', routeId)
           .order('sequence_number');
 
-        if (routeOrdersError) {
+        if (routeOrdersError || !routeOrders) {
           console.error('Error fetching route orders:', routeOrdersError);
           return [];
         }
 
         // If no orders in route, return empty array
-        if (!routeOrders || routeOrders.length === 0) {
+        if (routeOrders.length === 0) {
           return [];
         }
         
@@ -53,12 +54,8 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
           .select('*')
           .in('id', orderIds);
 
-        if (ordersError) {
+        if (ordersError || !orders) {
           console.error('Error fetching orders:', ordersError);
-          return [];
-        }
-
-        if (!orders || orders.length === 0) {
           return [];
         }
 
@@ -70,14 +67,14 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
           }
         });
 
-        // Create orders with sequence numbers and sort them
-        const orderWithSequence: OrderWithSequence[] = orders.map(order => ({
+        // Create orders with sequence numbers
+        const ordersWithSequence: OrderWithSequence[] = orders.map(order => ({
           ...order,
           sequence_number: sequenceMap.get(order.id) || 0
         }));
         
         // Return sorted orders by sequence number
-        return orderWithSequence.sort((a, b) => a.sequence_number - b.sequence_number);
+        return ordersWithSequence.sort((a, b) => a.sequence_number - b.sequence_number);
       } catch (err) {
         console.error('Error in route orders query:', err);
         return [];
@@ -117,7 +114,7 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
                       </div>
                       <div className="text-sm text-muted-foreground mb-2">
                         {order.street} {order.number}
-                        {order.int_number && `, Int. ${order.int_number}`}
+                        {order.int_number ? `, Int. ${order.int_number}` : ''}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {order.neighborhood}, {order.postal_code}

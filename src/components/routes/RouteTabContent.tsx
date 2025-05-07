@@ -32,9 +32,9 @@ const validateStatus = (status: string): RouteStatusType => {
 };
 
 export const RouteTabContent = ({ activeTab }: RouteTabContentProps) => {
-  const { data: routes, isLoading, error } = useQuery({
+  const { data: routes = [], isLoading, error } = useQuery({
     queryKey: ['routes', activeTab],
-    queryFn: async () => {
+    queryFn: async (): Promise<RouteData[]> => {
       try {
         const query = supabase
           .from('routes')
@@ -56,14 +56,17 @@ export const RouteTabContent = ({ activeTab }: RouteTabContentProps) => {
         }
 
         const { data, error } = await query;
+        
         if (error) {
           toast.error('Error al cargar las rutas');
           throw error;
         }
         
+        // Ensure data is never null
         return (data || []) as RouteData[];
       } catch (error) {
         console.error('Error fetching routes:', error);
+        toast.error('Error fetching routes');
         return [];
       }
     },
@@ -77,7 +80,7 @@ export const RouteTabContent = ({ activeTab }: RouteTabContentProps) => {
     return <div className="w-full text-center py-4">Cargando rutas...</div>;
   }
 
-  if (!routes?.length) {
+  if (!routes || routes.length === 0) {
     return (
       <div className="w-full text-center py-8 text-muted-foreground">
         No hay rutas para mostrar
