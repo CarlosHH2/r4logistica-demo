@@ -23,16 +23,30 @@ interface OperatorVehiclesTabProps {
 const OperatorVehiclesTab: React.FC<OperatorVehiclesTabProps> = ({ operatorId }) => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
   const { toast } = useToast();
 
   const loadVehicles = async () => {
+    if (!operatorId) {
+      setIsLoading(false);
+      setIsError(true);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "ID del operador no disponible. No se pueden cargar vehículos.",
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
+      setIsError(false);
       console.log('Cargando vehículos para operador:', operatorId);
       const data = await vehicleService.getVehiclesByOperator(operatorId);
       setVehicles(data);
     } catch (error) {
       console.error('Error al cargar vehículos:', error);
+      setIsError(true);
       toast({
         variant: "destructive",
         title: "Error",
@@ -46,6 +60,9 @@ const OperatorVehiclesTab: React.FC<OperatorVehiclesTabProps> = ({ operatorId })
   useEffect(() => {
     if (operatorId) {
       loadVehicles();
+    } else {
+      setIsLoading(false);
+      setIsError(true);
     }
   }, [operatorId]);
 
@@ -67,6 +84,18 @@ const OperatorVehiclesTab: React.FC<OperatorVehiclesTabProps> = ({ operatorId })
     }
   };
 
+  if (!operatorId) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center py-4 text-destructive">
+            ID del operador no disponible. No se pueden gestionar vehículos.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -78,6 +107,10 @@ const OperatorVehiclesTab: React.FC<OperatorVehiclesTabProps> = ({ operatorId })
       <CardContent className="space-y-6">
         {isLoading ? (
           <div className="text-center py-4">Cargando vehículos...</div>
+        ) : isError ? (
+          <div className="text-center py-4 text-destructive">
+            Error al cargar vehículos. Por favor intente nuevamente.
+          </div>
         ) : vehicles.length > 0 ? (
           <div className="space-y-4">
             {vehicles.map((vehicle) => (

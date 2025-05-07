@@ -29,15 +29,24 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
       plate: '',
       color: '',
     },
+    mode: 'onChange', // Validación al cambiar los datos
   });
 
   const onSubmit = async (data: VehicleFormValues) => {
     try {
+      if (!operatorId) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "ID del operador no disponible. No se puede registrar el vehículo.",
+        });
+        return;
+      }
+
       setIsLoading(true);
       console.log('Enviando datos del vehículo:', data);
       console.log('ID del operador:', operatorId);
       
-      // Asegurarse que se está creando un nuevo registro utilizando registerVehicle
       await vehicleService.registerVehicle(operatorId, data);
       
       toast({
