@@ -37,6 +37,8 @@ const NewVehicleForm: React.FC<NewVehicleFormProps> = ({ operatorId, onComplete 
       console.log('Enviando datos del vehículo:', data);
       console.log('ID del operador:', operatorId);
       
+      // Asegurarse que se está creando un nuevo registro utilizando registerVehicle
+      // que ahora garantiza el uso de INSERT en Supabase
       await vehicleService.registerVehicle(operatorId, data);
       
       toast({

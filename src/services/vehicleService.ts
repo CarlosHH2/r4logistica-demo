@@ -23,9 +23,10 @@ export const vehicleService = {
 
       console.log('Guardando datos del vehículo:', vehicleData);
       
+      // Aseguramos que se está utilizando INSERT explícitamente para crear un nuevo vehículo
       const { data: vehicle, error } = await supabase
         .from('operator_vehicles')
-        .insert(vehicleData)
+        .insert([vehicleData]) // Pasamos un array con los datos para asegurar que se usa INSERT
         .select()
         .single();
 
