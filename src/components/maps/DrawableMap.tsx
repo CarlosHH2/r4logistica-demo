@@ -14,9 +14,10 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiY2FybG9zaDIiLCJhIjoiY203aWxlNHU5MXNwNjJzcTNmZ
 interface DrawableMapProps {
   onPolygonComplete?: (coordinates: number[][]) => void;
   orders?: Order[];
+  onError?: (error: string) => void;
 }
 
-const DrawableMap: React.FC<DrawableMapProps> = ({ onPolygonComplete, orders = [] }) => {
+const DrawableMap: React.FC<DrawableMapProps> = ({ onPolygonComplete, orders = [], onError }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const draw = useRef<MapboxDraw | null>(null);
@@ -35,62 +36,77 @@ const DrawableMap: React.FC<DrawableMapProps> = ({ onPolygonComplete, orders = [
     
     clearMarkers();
 
-    orders.forEach(order => {
-      if (order.lat && order.lng) {
-        const marker = new mapboxgl.Marker()
-          .setLngLat([order.lng, order.lat])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 })
-              .setHTML(
-                `<div>
-                  <p><strong>Dirección:</strong> ${order.street} ${order.number}</p>
-                  <p><strong>Código Postal:</strong> ${order.postal_code}</p>
-                </div>`
-              )
-          )
-          .addTo(map.current);
-        
-        markersRef.current.push(marker);
-      }
-    });
+    try {
+      orders.forEach(order => {
+        if (order.lat && order.lng) {
+          const marker = new mapboxgl.Marker()
+            .setLngLat([order.lng, order.lat])
+            .setPopup(
+              new mapboxgl.Popup({ offset: 25 })
+                .setHTML(
+                  `<div>
+                    <p><strong>Dirección:</strong> ${order.street} ${order.number}</p>
+                    <p><strong>Código Postal:</strong> ${order.postal_code}</p>
+                  </div>`
+                )
+            )
+            .addTo(map.current);
+          
+          markersRef.current.push(marker);
+        }
+      });
+    } catch (err) {
+      console.error('Error adding markers:', err);
+      onError?.('Error al agregar marcadores al mapa');
+    }
   };
 
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-99.1332, 19.4326], // Ciudad de México
-      zoom: 11
-    });
+    try {
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [-99.1332, 19.4326], // Ciudad de México
+        zoom: 11
+      });
 
-    draw.current = new MapboxDraw({
-      displayControlsDefault: false,
-      controls: {
-        polygon: true,
-        trash: true
-      }
-    });
+      draw.current = new MapboxDraw({
+        displayControlsDefault: false,
+        controls: {
+          polygon: true,
+          trash: true
+        }
+      });
 
-    map.current.addControl(draw.current);
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.current.addControl(draw.current);
+      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    map.current.on('draw.create', (e: any) => {
-      if (e.features && e.features.length > 0 && e.features[0].geometry && e.features[0].geometry.coordinates) {
-        const coordinates = e.features[0].geometry.coordinates[0];
-        onPolygonComplete?.(coordinates);
+      map.current.on('draw.create', (e: any) => {
+        if (e.features && e.features.length > 0 && e.features[0].geometry && e.features[0].geometry.coordinates) {
+          const coordinates = e.features[0].geometry.coordinates[0];
+          onPolygonComplete?.(coordinates);
+          setIsDrawing(false);
+        }
+      });
+
+      map.current.on('draw.delete', () => {
         setIsDrawing(false);
-      }
-    });
+      });
 
-    map.current.on('draw.delete', () => {
-      setIsDrawing(false);
-    });
+      map.current.on('load', () => {
+        addOrderMarkers();
+      });
 
-    map.current.on('load', () => {
-      addOrderMarkers();
-    });
+      map.current.on('error', (e) => {
+        console.error('Mapbox error:', e);
+        onError?.('Error en el mapa: ' + e.error?.message || 'Error desconocido');
+      });
+    } catch (err) {
+      console.error('Error initializing map:', err);
+      onError?.('Error al inicializar el mapa');
+    }
 
     return () => {
       clearMarkers();
