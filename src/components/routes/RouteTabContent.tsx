@@ -63,14 +63,18 @@ export const RouteTabContent = ({ activeTab }: RouteTabContentProps) => {
           throw error;
         }
         
-        // Ensure data is never null
-        return (data || []) as RouteData[];
+        // Ensure data is never null and handle empty results safely
+        return data || [];
       } catch (error) {
         console.error('Error fetching routes:', error);
-        toast.error('Error fetching routes');
+        toast.error('Error al cargar las rutas');
         return [];
       }
     },
+    // Add retry logic and error handling
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 30000,
   });
 
   if (error) {
@@ -89,9 +93,12 @@ export const RouteTabContent = ({ activeTab }: RouteTabContentProps) => {
     );
   }
 
+  // Make sure routes is always an array and has valid data
+  const safeRoutes = Array.isArray(routes) ? routes : [];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {routes.map((route) => (
+      {safeRoutes.map((route) => (
         <RouteCard 
           key={route.id} 
           route={{

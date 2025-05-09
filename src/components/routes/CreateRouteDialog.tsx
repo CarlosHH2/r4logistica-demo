@@ -16,18 +16,29 @@ export const CreateRouteDialog = () => {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
-  const { data: orders, isLoading } = useQuery({
+  const { data: orders = [], isLoading, error } = useQuery({
     queryKey: ['unassigned-orders'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('route_assigned', false)
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('route_assigned', false)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as Order[];
+        if (error) {
+          console.error('Error fetching unassigned orders:', error);
+          throw error;
+        }
+        
+        return data as Order[] || [];
+      } catch (err) {
+        console.error('Error in unassigned orders query:', err);
+        return [];
+      }
     },
+    enabled: open, // Only fetch when dialog is open
+    refetchOnWindowFocus: false,
   });
 
   const createRouteMutation = useMutation({
@@ -35,29 +46,49 @@ export const CreateRouteDialog = () => {
       if (!selectedOrders.length) throw new Error('Selecciona al menos una orden');
       if (!alias.trim()) throw new Error('El alias es requerido');
 
-      // Insert new route
-      const { data: route, error: routeError } = await supabase
-        .from('routes')
-        .insert([{ alias }])
-        .select()
-        .single();
+      try {
+        // Insert new route
+        const { data: route, error: routeError } = await supabase
+          .from('routes')
+          .insert([{ alias }])
+          .select()
+          .single();
 
-      if (routeError) throw routeError;
+        if (routeError) throw routeError;
 
-      // Insert route_orders
-      const routeOrders = selectedOrders.map((orderId, index) => ({
-        route_id: route.id,
-        order_id: orderId,
-        sequence_number: index + 1,
-      }));
+        if (!route || !route.id) {
+          throw new Error('Error al crear la ruta: no se obtuvo un ID');
+        }
 
-      const { error: routeOrdersError } = await supabase
-        .from('route_orders')
-        .insert(routeOrders);
+        // Insert route_orders
+        const routeOrders = selectedOrders.map((orderId, index) => ({
+          route_id: route.id,
+          order_id: orderId,
+          sequence_number: index + 1,
+        }));
 
-      if (routeOrdersError) throw routeOrdersError;
+        const { error: routeOrdersError } = await supabase
+          .from('route_orders')
+          .insert(routeOrders);
 
-      return route;
+        if (routeOrdersError) throw routeOrdersError;
+
+        // Update orders to mark them as assigned
+        const { error: updateOrdersError } = await supabase
+          .from('orders')
+          .update({ route_assigned: true })
+          .in('id', selectedOrders);
+
+        if (updateOrdersError) {
+          console.warn('Error updating orders as assigned:', updateOrdersError);
+          // Continue anyway as this is not critical
+        }
+
+        return route;
+      } catch (error) {
+        console.error('Error in createRoute mutation:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['routes'] });
@@ -67,8 +98,8 @@ export const CreateRouteDialog = () => {
       setAlias('');
       setSelectedOrders([]);
     },
-    onError: (error) => {
-      toast.error(error.message);
+    onError: (error: any) => {
+      toast.error(error.message || 'Error al crear la ruta');
     },
   });
 
@@ -84,8 +115,20 @@ export const CreateRouteDialog = () => {
     );
   };
 
+  const handleOpen = (newState: boolean) => {
+    if (newState && createRouteMutation.isPending) {
+      return; // Prevent opening while mutation is in progress
+    }
+    setOpen(newState);
+    if (!newState) {
+      // Reset state when closing
+      setSelectedOrders([]);
+      setAlias('');
+    }
+  };
+
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={handleOpen}>
       <SheetTrigger asChild>
         <Button>
           Nueva ruta
@@ -107,7 +150,11 @@ export const CreateRouteDialog = () => {
           </div>
           <div className="space-y-4">
             <Label>Selecciona las órdenes para esta ruta</Label>
-            {isLoading ? (
+            {error ? (
+              <div className="text-sm text-red-500">
+                Error al cargar las órdenes. Por favor, intenta de nuevo.
+              </div>
+            ) : isLoading ? (
               <div>Cargando órdenes...</div>
             ) : !orders?.length ? (
               <div className="text-sm text-muted-foreground">
@@ -143,6 +190,7 @@ export const CreateRouteDialog = () => {
             <Button
               variant="outline"
               onClick={() => setOpen(false)}
+              disabled={createRouteMutation.isPending}
             >
               Cancelar
             </Button>
@@ -150,7 +198,7 @@ export const CreateRouteDialog = () => {
               onClick={handleCreateRoute}
               disabled={!selectedOrders.length || !alias.trim() || createRouteMutation.isPending}
             >
-              Crear ruta
+              {createRouteMutation.isPending ? 'Creando...' : 'Crear ruta'}
             </Button>
           </div>
         </div>

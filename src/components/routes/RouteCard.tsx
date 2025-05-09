@@ -23,13 +23,17 @@ interface RouteCardProps {
 export const RouteCard = ({ route }: RouteCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   
+  if (!route || !route.id) {
+    return null; // Don't render invalid routes
+  }
+  
   // Safety check: ensure route_orders is always an array
   const routeOrders = Array.isArray(route.route_orders) ? route.route_orders : [];
   const orderCount = routeOrders.length;
   
   // Generate a safe operator display name
   const operatorName = route.operators 
-    ? `${route.operators.name} ${route.operators.lastname}` 
+    ? `${route.operators.name || ''} ${route.operators.lastname || ''}`.trim() || 'No asignado'
     : 'No asignado';
 
   return (
@@ -37,8 +41,8 @@ export const RouteCard = ({ route }: RouteCardProps) => {
       <Card className="overflow-hidden">
         <div className="p-4 border-b flex items-center justify-between">
           <div>
-            <h3 className="font-medium">{route.alias}</h3>
-            <p className="text-sm text-muted-foreground">{route.id.slice(0, 8)}</p>
+            <h3 className="font-medium">{route.alias || 'Ruta sin nombre'}</h3>
+            <p className="text-sm text-muted-foreground">{route.id ? route.id.slice(0, 8) : ''}</p>
           </div>
           <RouteStatusBadge status={route.status} />
         </div>

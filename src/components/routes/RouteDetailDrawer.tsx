@@ -9,6 +9,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Order } from "@/types/order";
+import { useState } from "react";
 
 interface RouteDetailDrawerProps {
   routeId: string;
@@ -22,12 +23,17 @@ interface OrderWithSequence extends Order {
 }
 
 export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawerProps) => {
-  const { data: orders, isLoading, error } = useQuery({
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  const { data: orders = [], isLoading, error } = useQuery({
     queryKey: ['route-orders', routeId],
     queryFn: async (): Promise<OrderWithSequence[]> => {
       if (!routeId) return [];
       
       try {
+        // Reset error state at the beginning
+        setErrorMessage(null);
+        
         // Fetch route orders
         const { data: routeOrders, error: routeOrdersError } = await supabase
           .from('route_orders')
@@ -37,6 +43,7 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
 
         if (routeOrdersError) {
           console.error('Error fetching route orders:', routeOrdersError);
+          setErrorMessage('Error al cargar los detalles de la ruta');
           return [];
         }
 
@@ -56,6 +63,7 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
 
         if (ordersError || !orders) {
           console.error('Error fetching orders:', ordersError);
+          setErrorMessage('Error al cargar las órdenes');
           return [];
         }
 
@@ -77,10 +85,13 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
         return ordersWithSequence.sort((a, b) => a.sequence_number - b.sequence_number);
       } catch (err) {
         console.error('Error in route orders query:', err);
+        setErrorMessage('Error inesperado al cargar las órdenes');
         return [];
       }
     },
     enabled: isOpen && !!routeId,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   return (
@@ -90,6 +101,11 @@ export const RouteDetailDrawer = ({ routeId, isOpen, onClose }: RouteDetailDrawe
           <DrawerTitle>Detalle de la Ruta</DrawerTitle>
         </DrawerHeader>
         <div className="p-4">
+          {errorMessage && (
+            <div className="text-center py-4 text-red-500 mb-2">
+              {errorMessage}
+            </div>
+          )}
           {error ? (
             <div className="text-center py-4 text-red-500">
               Error al cargar las órdenes. Por favor, intenta de nuevo.
